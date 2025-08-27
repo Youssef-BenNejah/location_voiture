@@ -1,0 +1,4 @@
+package brama.pressing_api.token;
+
+public enum TokenType {
+}

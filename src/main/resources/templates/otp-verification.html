@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Verification Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .otp-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .otp-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .otp-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .otp-code {
+            font-size: 42px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Courier New', monospace;
+            position: relative;
+            z-index: 1;
+        }
+
+        .purpose-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+
+        .purpose-box strong {
+            color: #667eea;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 25px;
+            font-size: 14px;
+        }
+
+        .warning-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 25px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .social-links {
+            margin-top: 20px;
+        }
+
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #667eea;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔐 Verification Code</h1>
+        <p>Your security is our priority</p>
+    </div>
+
+    <div class="content">
+        <div class="greeting">
+            Hello <strong th:text="${username}">User</strong>,
+        </div>
+
+        <p class="info-text">
+            You've requested a verification code. Please use the code below to complete your action:
+        </p>
+
+        <div class="otp-container">
+            <div class="otp-label">Your Verification Code</div>
+            <div class="otp-code" th:text="${otpCode}">123456</div>
+        </div>
+
+        <div class="purpose-box">
+            <strong>Purpose:</strong> <span th:text="${purpose}">Email Verification</span>
+        </div>
+
+        <p class="info-text">
+            This code will expire in <strong th:text="${expiryMinutes}">10</strong> minutes.
+            Please enter it on the verification page to continue.
+        </p>
+
+        <div class="warning">
+            <span class="warning-icon">⚠️</span>
+            <strong>Security Notice:</strong> Never share this code with anyone.
+            Our team will never ask you for this code via email or phone.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>If you didn't request this code, please ignore this email or
+            <a href="#">contact support</a> if you have concerns.</p>
+
+        <p style="margin-top: 15px;">
+            © 2024 Your Company. All rights reserved.
+        </p>
+
+        <div class="social-links">
+            <a href="#">📧</a>
+            <a href="#">💼</a>
+            <a href="#">🐦</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

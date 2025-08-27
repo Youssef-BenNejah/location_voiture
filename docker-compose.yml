@@ -1,0 +1,12 @@
+services:
+
+  mail-dev:
+    container_name: mail-dev-pressing
+    image: maildev/maildev
+    ports:
+      - 1080-1080
+      - 1025:1025
+
+networks:
+  pressing-net:
+    driver: bridge

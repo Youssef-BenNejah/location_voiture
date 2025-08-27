@@ -1,0 +1,148 @@
+package brama.pressing_api.security;
+
+import brama.pressing_api.exception.BusinessException;
+import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.role.Role;
+import brama.pressing_api.role.RoleRepository;
+import brama.pressing_api.token.TokenService;
+import brama.pressing_api.user.User;
+import brama.pressing_api.user.UserRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+
+@Service
+
+
+public class JwtService {
+
+    public static final String TOKEN_TYPE = "token_type";
+    public static final String ROLES_CLAIM = "roles";
+    public static final String USER_ID_CLAIM = "user_id";
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
+    @Value("${app.security.jwt.access-token-expiration}")
+    private long accessTokenExpiration;
+    @Value("${app.security.jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final TokenService tokenService;
+
+    public JwtService(RoleRepository roleRepository, UserRepository userRepository,TokenService tokenService) throws Exception {
+        this.privateKey = KeyUtils.loadPrivateKey("keys/local-only/private_key.pem");
+        this.publicKey = KeyUtils.loadPublicKey("keys/local-only/public_key.pem");
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.tokenService = tokenService;
+    }
+
+    public String generateAccessToken(final User user) {
+        final Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE, "ACCESS_TOKEN");
+        claims.put(USER_ID_CLAIM, user.getId());
+        claims.put(ROLES_CLAIM, extractRoleNames(user));
+        return buildToken(user.getEmail(), claims, this.accessTokenExpiration);
+    }
+
+    private List<String> extractRoleNames(final User user) {
+        return user.getRoles().stream()
+                .map(roleId -> roleRepository.findById(roleId)
+                        .map(Role::getName)
+                        .orElse("UNKNOWN"))
+                .collect(Collectors.toList());
+    }
+
+    public String generateRefreshToken(final User user) {
+        final Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE, "REFRESH_TOKEN");
+        claims.put(USER_ID_CLAIM, user.getId());
+
+        return buildToken(user.getUsername(), claims, this.refreshTokenExpiration);
+    }
+
+    public String buildToken(final String username, final Map<String, Object> claims, final long expiration) {
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(this.privateKey)
+                .compact();
+    }
+
+    public boolean isTokenValid(final String token, final String expectedUsername) {
+        final String username = extractUsername(token);
+        return username.equals(expectedUsername) && !isTokenExpired(token);
+    }
+
+    public String extractUsername(final String token) {
+        return extractClaims(token).getSubject();
+    }
+
+    private boolean isTokenExpired(final String token) {
+        return extractClaims(token).getExpiration()
+                .before(new Date());
+    }
+
+    private Claims extractClaims(final String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(this.publicKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (final JwtException e) {
+            throw new RuntimeException("Invalid token", e);
+        }
+    }
+    public Date extractExpiration(final String token) {
+        return extractClaims(token).getExpiration();
+    }
+
+//    public String refreshAccessToken(final String refreshToken) {
+//        final Claims claims = extractClaims(refreshToken);
+//
+//        if (!"REFRESH_TOKEN".equals(claims.get(TOKEN_TYPE, String.class))) {
+//            throw new RuntimeException("Invalid token type");
+//        }
+//        if (claims.getExpiration().before(new Date())) {
+//            throw new RuntimeException("Refresh token expired");
+//        }
+//
+//        final String username = claims.getSubject();
+//        final User user = userRepository.findByEmailIgnoreCase(username)
+//                .orElseThrow(() -> new RuntimeException("User not found"));
+//        return generateAccessToken(user);
+//    }
+public String refreshAccessToken(final String refreshToken) {
+    // Validate token in database first
+    tokenService.validateRefreshToken(refreshToken);
+
+    final Claims claims = extractClaims(refreshToken);
+
+    if (!"REFRESH_TOKEN".equals(claims.get(TOKEN_TYPE, String.class))) {
+        throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+    }
+    if (claims.getExpiration().before(new Date())) {
+        throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+    }
+
+    final String username = claims.getSubject();
+    final User user = userRepository.findByEmailIgnoreCase(username)
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    return generateAccessToken(user);
+}
+}

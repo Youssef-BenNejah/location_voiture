@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: pressing-api
+  profiles:
+    active: dev
+  config:
+    import: optional:file:.env[.properties]
+
+
+
+
+
+app:
+  security:
+    jwt:
+      access-token-expiration: 86400000 # 24 hours for local testing
+      refresh-token-expiration: 604800000 # 7 days
+    disposable-email: 10minutemail,20minutemail,33mail,5ymail,anonbox,guerrillamail,mailinator,maildrop,mailnesia,moakt,my10minutemail,throwawaymail,trashmail,temp-mail,tempmail,truemail,yopmail
+    otp:
+      length: 6
+      expiry-minutes: 15
+      max-attempts: 5
+      max-per-hour: 3

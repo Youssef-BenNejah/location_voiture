@@ -1,0 +1,107 @@
+package brama.pressing_api.handler;
+
+
+import brama.pressing_api.exception.BusinessException;
+import brama.pressing_api.exception.EntityNotFoundException;
+import brama.pressing_api.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RestControllerAdvice
+@RequiredArgsConstructor
+@Slf4j
+
+public class ApplicationExceptionHandler {
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(final BusinessException ex) {
+        final ErrorResponse body=ErrorResponse.builder()
+                .code(ex.getErrorCode().getCode())
+                .message(ex.getMessage())
+                .build();
+        log.info("Business exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        return ResponseEntity.status(ex.getErrorCode().getStatus() != null ? ex.getErrorCode().getStatus() : HttpStatus.BAD_REQUEST).body(body);
+    }
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabledException(final DisabledException ex) {
+        final ErrorResponse body=ErrorResponse.builder()
+                .code(ErrorCode.ERR_USER_DISABLED.getCode())
+                .message(ErrorCode.ERR_USER_DISABLED.getDefaultMessage())
+                .build();
+        log.info("Disabled exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        return ResponseEntity.status(ErrorCode.ERR_USER_DISABLED.getStatus()).body(body);
+    }
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentialsException(final BadCredentialsException ex) {
+
+        log.info("Bad credentials exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        final ErrorResponse body=ErrorResponse.builder()
+                .code(ErrorCode.BAD_CREDENTIALS.getCode())
+                .message(ErrorCode.BAD_CREDENTIALS.getDefaultMessage())
+                .build();
+        return ResponseEntity.status(ErrorCode.BAD_CREDENTIALS.getStatus()).body(body);
+    }
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(final UsernameNotFoundException ex) {
+        final ErrorResponse body=ErrorResponse.builder()
+                .code(ErrorCode.USERNAME_NOT_FOUND.getCode())
+                .message(ErrorCode.USERNAME_NOT_FOUND.getDefaultMessage())
+                .build();
+        log.info("Username not found exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(final EntityNotFoundException ex) {
+        log.info("Entity not found exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        final ErrorResponse body=ErrorResponse.builder()
+                .code("ENTITY_NOT_FOUND")
+                .message(ex.getMessage())
+                .build();
+
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(final Exception ex) {
+        log.info("Internal exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        final ErrorResponse body=ErrorResponse.builder()
+                .code(ErrorCode.INTERNAL_EXCEPTION.getCode())
+                .message(ErrorCode.INTERNAL_EXCEPTION.getDefaultMessage())
+                .build();
+
+        return ResponseEntity.status(ErrorCode.INTERNAL_EXCEPTION.getStatus()).body(body);
+    }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(final MethodArgumentNotValidException ex) {
+        final List<ErrorResponse.ValidationError> validationErrors=new ArrayList<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            final String fieldName = ((FieldError) error).getField();
+            final String errorCode=error.getDefaultMessage();
+            validationErrors.add(ErrorResponse.ValidationError.builder().field(fieldName).code(errorCode).build());
+        });
+        final ErrorResponse body=ErrorResponse.builder()
+
+                .validationErrors(validationErrors)
+                .build();
+        log.info("Validation exception {}", ex.getMessage());
+        log.debug(ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+}

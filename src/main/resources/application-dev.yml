@@ -1,0 +1,20 @@
+spring:
+   data:
+    mongodb:
+      uri: mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@${DB_CLUSTER_URL}/${DB_NAME}?retryWrites=true&w=majority
+
+   mail:
+     host: localhost
+     port: 1025
+     username: yassine
+     password: yassine
+     properties:
+       mail:
+         smtp:
+           trust: "*"
+         auth: true
+         starttls:
+           enabled: true
+         connectiontimeout: 5000
+         timeout: 3000
+         writetimeout: 5000
