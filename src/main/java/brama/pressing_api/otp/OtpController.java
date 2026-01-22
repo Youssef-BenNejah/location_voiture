@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * OTP endpoints for generating, verifying, and resending codes.
+ */
 @RestController
 @RequestMapping("/api/v1/otp")
 @RequiredArgsConstructor
@@ -26,6 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class OtpController {
     private final TokenService tokenService;
 
+    /**
+     * Generates a new OTP for a user and purpose.
+     */
     @PostMapping("/generate")
     public ResponseEntity<OtpResponse> generateOtp(@Valid @RequestBody GenerateOtpRequest request) {
         log.info("Generating OTP for user: {} with purpose: {}", request.getUserId(), request.getPurpose());
@@ -41,6 +47,9 @@ public class OtpController {
                 .build());
     }
 
+    /**
+     * Verifies a submitted OTP code.
+     */
     @PostMapping("/verify")
     public ResponseEntity<VerifyOtpResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         log.info("Verifying OTP for user: {} with purpose: {}", request.getUserId(), request.getPurpose());
@@ -57,6 +66,9 @@ public class OtpController {
                 .build());
     }
 
+    /**
+     * Resends a new OTP by revoking the existing one and issuing a new code.
+     */
     @PostMapping("/resend")
     public ResponseEntity<OtpResponse> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
         log.info("Resending OTP for user: {} with purpose: {}", request.getUserId(), request.getPurpose());

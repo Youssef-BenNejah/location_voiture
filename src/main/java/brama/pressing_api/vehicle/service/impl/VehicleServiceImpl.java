@@ -1,0 +1,132 @@
+package brama.pressing_api.vehicle.service.impl;
+
+import brama.pressing_api.booking.domain.model.BookingStatus;
+import brama.pressing_api.booking.repo.BookingRepository;
+import brama.pressing_api.exception.BusinessException;
+import brama.pressing_api.exception.EntityNotFoundException;
+import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.vehicle.VehicleMapper;
+import brama.pressing_api.vehicle.domain.model.Vehicle;
+import brama.pressing_api.vehicle.domain.model.VehicleStatus;
+import brama.pressing_api.vehicle.dto.request.CreateVehicleRequest;
+import brama.pressing_api.vehicle.dto.request.UpdateVehicleRequest;
+import brama.pressing_api.vehicle.dto.response.VehicleResponse;
+import brama.pressing_api.vehicle.repo.VehicleRepository;
+import brama.pressing_api.vehicle.service.VehicleSearchCriteria;
+import brama.pressing_api.vehicle.service.VehicleService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class VehicleServiceImpl implements VehicleService {
+    private final VehicleRepository vehicleRepository;
+    private final BookingRepository bookingRepository;
+
+    @Override
+    @CacheEvict(cacheNames = "vehicles", allEntries = true)
+    public VehicleResponse create(final CreateVehicleRequest request) {
+        Vehicle vehicle = VehicleMapper.toEntity(request);
+        return VehicleMapper.toResponse(vehicleRepository.save(vehicle));
+    }
+
+    @Override
+    @CacheEvict(cacheNames = "vehicles", key = "#vehicleId")
+    public VehicleResponse update(final String vehicleId, final UpdateVehicleRequest request) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found"));
+        VehicleMapper.applyUpdates(vehicle, request);
+        return VehicleMapper.toResponse(vehicleRepository.save(vehicle));
+    }
+
+    @Override
+    @Cacheable(cacheNames = "vehicles", key = "#vehicleId")
+    public VehicleResponse getById(final String vehicleId) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found"));
+        return VehicleMapper.toResponse(vehicle);
+    }
+
+    @Override
+    @CacheEvict(cacheNames = "vehicles", key = "#vehicleId")
+    public void delete(final String vehicleId) {
+        if (!vehicleRepository.existsById(vehicleId)) {
+            throw new EntityNotFoundException("Vehicle not found");
+        }
+        vehicleRepository.deleteById(vehicleId);
+    }
+
+    @Override
+    public Page<VehicleResponse> searchPublic(final VehicleSearchCriteria criteria, final Pageable pageable) {
+        VehicleSearchCriteria effective = criteria;
+        if (criteria.getStartDate() != null || criteria.getEndDate() != null) {
+            validateDateRange(criteria.getStartDate(), criteria.getEndDate());
+        }
+
+        if (criteria.getStatuses() == null || criteria.getStatuses().isEmpty()) {
+            effective = VehicleSearchCriteria.builder()
+                    .locationId(criteria.getLocationId())
+                    .startDate(criteria.getStartDate())
+                    .endDate(criteria.getEndDate())
+                    .category(criteria.getCategory())
+                    .transmission(criteria.getTransmission())
+                    .fuelType(criteria.getFuelType())
+                    .minSeats(criteria.getMinSeats())
+                    .minPrice(criteria.getMinPrice())
+                    .maxPrice(criteria.getMaxPrice())
+                    .statuses(EnumSet.of(VehicleStatus.AVAILABLE))
+                    .excludeVehicleIds(criteria.getExcludeVehicleIds())
+                    .build();
+        }
+
+        if (effective.getStartDate() != null && effective.getEndDate() != null) {
+            Set<String> reservedVehicleIds = getReservedVehicleIds(effective.getStartDate(), effective.getEndDate());
+            effective = VehicleSearchCriteria.builder()
+                    .locationId(effective.getLocationId())
+                    .startDate(effective.getStartDate())
+                    .endDate(effective.getEndDate())
+                    .category(effective.getCategory())
+                    .transmission(effective.getTransmission())
+                    .fuelType(effective.getFuelType())
+                    .minSeats(effective.getMinSeats())
+                    .minPrice(effective.getMinPrice())
+                    .maxPrice(effective.getMaxPrice())
+                    .statuses(effective.getStatuses())
+                    .excludeVehicleIds(reservedVehicleIds)
+                    .build();
+        }
+
+        return vehicleRepository.search(effective, pageable)
+                .map(VehicleMapper::toResponse);
+    }
+
+    @Override
+    public Page<VehicleResponse> listAdmin(final Pageable pageable) {
+        return vehicleRepository.findAll(pageable).map(VehicleMapper::toResponse);
+    }
+
+    private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
+        if (startDate == null || endDate == null || !startDate.isBefore(endDate)) {
+            throw new BusinessException(ErrorCode.INVALID_DATE_RANGE);
+        }
+    }
+
+    private Set<String> getReservedVehicleIds(final LocalDate startDate, final LocalDate endDate) {
+        List<BookingStatus> activeStatuses = List.of(BookingStatus.CONFIRMED, BookingStatus.ACTIVE);
+        return bookingRepository
+                .findByOverlappingDates(startDate, endDate, activeStatuses)
+                .stream()
+                .map(booking -> booking.getVehicleId())
+                .collect(Collectors.toSet());
+    }
+}

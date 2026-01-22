@@ -9,6 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * User profile endpoints for authenticated users.
+ */
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -16,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService service;
 
+    /**
+     * Updates the current user's profile fields.
+     */
     @PatchMapping("/me")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void updateProfile(
@@ -26,6 +32,9 @@ public class UserController {
         this.service.updateProfileInfo(request, getUserId(principal));
     }
 
+    /**
+     * Changes the current user's password.
+     */
     @PostMapping("/me/password")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void changePassword(
@@ -36,18 +45,27 @@ public class UserController {
         this.service.changePassword(request, getUserId(principal));
     }
 
+    /**
+     * Deactivates the current user's account.
+     */
     @PatchMapping("/me/deactivate")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deactivateAccount(final Authentication principal) {
         this.service.deactivateAccount(getUserId(principal));
     }
 
+    /**
+     * Reactivates the current user's account.
+     */
     @PatchMapping("/me/reactivate")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void reactivateAccount(final Authentication principal) {
         this.service.reactivateAccount(getUserId(principal));
     }
 
+    /**
+     * Deletes the current user's account (placeholder implementation).
+     */
     @DeleteMapping("/me")
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public void deleteAccount(final Authentication principal) {

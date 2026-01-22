@@ -1,20 +1,23 @@
 spring:
    data:
-    mongodb:
-      uri: mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@${DB_CLUSTER_URL}/${DB_NAME}?retryWrites=true&w=majority
+     mongodb:
+       uri: mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@${DB_CLUSTER_URL}/${DB_NAME}?retryWrites=true&w=majority
+     redis:
+       host: ${REDIS_HOST:localhost}
+       port: ${REDIS_PORT:6379}
+       timeout: 2000
 
    mail:
-     host: localhost
-     port: 1025
-     username: yassine
-     password: yassine
+     host: ${MAIL_HOST:smtp.gmail.com}
+     port: ${MAIL_PORT:587}
+     username: ${MAIL_USERNAME}
+     password: ${MAIL_PASSWORD}
      properties:
        mail:
          smtp:
-           trust: "*"
-         auth: true
-         starttls:
-           enabled: true
-         connectiontimeout: 5000
-         timeout: 3000
-         writetimeout: 5000
+           auth: true
+           starttls:
+             enable: true
+           connectiontimeout: 5000
+           timeout: 3000
+           writetimeout: 5000

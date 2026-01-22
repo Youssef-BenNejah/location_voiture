@@ -1,10 +1,14 @@
 spring:
   application:
-    name: pressing-api
+    name: car-joy-platform-api
   profiles:
     active: dev
   config:
     import: optional:file:.env[.properties]
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 
 
@@ -21,3 +25,15 @@ app:
       expiry-minutes: 10
       max-attempts: 5
       max-per-hour: 3
+  pricing:
+    tax-rate: 0.0
+    fees: 0.0
+    currency: USD
+  upload:
+    max-bytes: 10485760
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  folder: car-joy

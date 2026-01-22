@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Authentication endpoints for login, registration, and token refresh.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -21,6 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
     private final AuthenticationService service;
 
+    /**
+     * Authenticates a user and returns access/refresh tokens.
+     */
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(
             @Valid
@@ -29,6 +35,9 @@ public class AuthenticationController {
         return ResponseEntity.ok(this.service.login(request));
     }
 
+    /**
+     * Registers a new user account.
+     */
     @PostMapping("/register")
     public ResponseEntity<Void> register(
             @Valid
@@ -39,6 +48,9 @@ public class AuthenticationController {
                 .build();
     }
 
+    /**
+     * Refreshes an access token using a refresh token.
+     */
     @PostMapping("/refresh")
     public ResponseEntity<AuthenticationResponse> refresh(
             @RequestBody

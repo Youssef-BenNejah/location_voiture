@@ -75,11 +75,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final Role userRole = this.roleRepository.findByName("USER")
                 .orElseThrow(() -> new EntityNotFoundException("Role USER does not exist"));
 
-        final List<String> roleIds = new ArrayList<>();
-        roleIds.add(userRole.getId());
+        final List<String> roleNames = new ArrayList<>();
+        roleNames.add(userRole.getName());
 
         final User user = this.userMapper.toUser(request);
-        user.setRoles(roleIds);
+        user.setRoles(roleNames);
 
         log.debug("Saving user {}", user);
         this.userRepository.save(user);

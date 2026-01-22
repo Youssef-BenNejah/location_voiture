@@ -83,7 +83,13 @@ public class User implements UserDetails {
         }
 
         return this.roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                .map(role -> {
+                    String normalized = role.toUpperCase();
+                    if (normalized.startsWith("ROLE_")) {
+                        return new SimpleGrantedAuthority(normalized);
+                    }
+                    return new SimpleGrantedAuthority("ROLE_" + normalized);
+                })
                 .collect(Collectors.toList());
 
     }

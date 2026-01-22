@@ -32,7 +32,26 @@ public enum ErrorCode {
     INVALID_OR_EXPIRED_OTP("INVALID_OR_EXPIRED_OTP", "Invalid or expired OTP", BAD_REQUEST),
     INVALID_OTP_CODE("INVALID_OTP_CODE", "Invalid OTP code", BAD_REQUEST),
     OTP_MAX_ATTEMPTS_EXCEEDED("OTP_MAX_ATTEMPTS_EXCEEDED", "Maximum OTP attempts exceeded", TOO_MANY_REQUESTS),
-    OTP_RATE_LIMIT_EXCEEDED("OTP_RATE_LIMIT_EXCEEDED", "OTP generation rate limit exceeded", TOO_MANY_REQUESTS);
+    OTP_RATE_LIMIT_EXCEEDED("OTP_RATE_LIMIT_EXCEEDED", "OTP generation rate limit exceeded", TOO_MANY_REQUESTS),
+
+    INVALID_DATE_RANGE("INVALID_DATE_RANGE", "Start date must be before end date", BAD_REQUEST),
+    VEHICLE_NOT_AVAILABLE("VEHICLE_NOT_AVAILABLE", "Vehicle is not available for the selected dates", CONFLICT),
+    LOCATION_CODE_EXISTS("LOCATION_CODE_EXISTS", "Location code already exists", CONFLICT),
+    PROMO_CODE_EXISTS("PROMO_CODE_EXISTS", "Promo code already exists", CONFLICT),
+    PROMO_CODE_INVALID("PROMO_CODE_INVALID", "Promo code is invalid or expired", BAD_REQUEST),
+    BOOKING_STATUS_NOT_ALLOWED("BOOKING_STATUS_NOT_ALLOWED", "Booking status change is not allowed", BAD_REQUEST),
+    BOOKING_NOT_FOUND("BOOKING_NOT_FOUND", "Booking not found", NOT_FOUND),
+    PAYMENT_ALREADY_PROCESSED("PAYMENT_ALREADY_PROCESSED", "Payment already processed", CONFLICT),
+    EXCURSION_DISABLED("EXCURSION_DISABLED", "Excursion is disabled", CONFLICT),
+    EXCURSION_DATE_NOT_AVAILABLE("EXCURSION_DATE_NOT_AVAILABLE", "Selected date is not available", CONFLICT),
+    EXCURSION_FULL("EXCURSION_FULL", "Excursion is fully booked", CONFLICT),
+    EXCURSION_SEATS_LIMIT("EXCURSION_SEATS_LIMIT", "Requested seats exceed the allowed limit", BAD_REQUEST),
+    EXCURSION_CAPACITY_INVALID("EXCURSION_CAPACITY_INVALID", "Excursion capacity is invalid", BAD_REQUEST),
+    EXCURSION_CAPACITY_TOO_LOW("EXCURSION_CAPACITY_TOO_LOW", "Capacity is lower than booked seats", CONFLICT),
+    EXCURSION_BOOKING_STATUS_NOT_ALLOWED("EXCURSION_BOOKING_STATUS_NOT_ALLOWED", "Excursion booking status change is not allowed", BAD_REQUEST),
+    FILE_REQUIRED("FILE_REQUIRED", "File is required", BAD_REQUEST),
+    FILE_TOO_LARGE("FILE_TOO_LARGE", "File exceeds maximum size", BAD_REQUEST),
+    FILE_TYPE_NOT_ALLOWED("FILE_TYPE_NOT_ALLOWED", "File type is not allowed", BAD_REQUEST);
     ;
 
     private final String code;
