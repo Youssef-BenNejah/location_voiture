@@ -1,6 +1,7 @@
 package brama.pressing_api.payment.service.impl;
 
 import brama.pressing_api.booking.domain.model.Booking;
+import brama.pressing_api.booking.domain.model.BookingPaymentEntry;
 import brama.pressing_api.booking.domain.model.BookingPaymentStatus;
 import brama.pressing_api.booking.domain.model.BookingStatus;
 import brama.pressing_api.booking.repo.BookingRepository;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,7 +98,7 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findById(saved.getBookingId())
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
         if (status == PaymentStatus.PAID) {
-            booking.setPaymentStatus(BookingPaymentStatus.PAID);
+            updateBookingPayment(booking, saved);
             if (booking.getStatus() == null || booking.getStatus() == BookingStatus.PENDING) {
                 booking.setStatus(BookingStatus.CONFIRMED);
             }
@@ -106,5 +108,34 @@ public class PaymentServiceImpl implements PaymentService {
         bookingRepository.save(booking);
 
         return PaymentMapper.toResponse(saved);
+    }
+
+    private void updateBookingPayment(final Booking booking, final Payment payment) {
+        if (booking == null || payment == null) {
+            return;
+        }
+        if (booking.getPaymentHistory() == null) {
+            booking.setPaymentHistory(new ArrayList<>());
+        }
+        booking.getPaymentHistory().add(BookingPaymentEntry.builder()
+                .amount(payment.getAmount())
+                .date(payment.getPaidAt() != null ? payment.getPaidAt() : LocalDateTime.now())
+                .method(payment.getMethod() != null ? payment.getMethod().name() : null)
+                .note("Payment")
+                .build());
+        if (booking.getPaidAmount() == null) {
+            booking.setPaidAmount(payment.getAmount());
+        } else {
+            booking.setPaidAmount(booking.getPaidAmount().add(payment.getAmount()));
+        }
+        if (booking.getPricing() != null && booking.getPricing().getTotal() != null) {
+            if (booking.getPaidAmount().compareTo(booking.getPricing().getTotal()) >= 0) {
+                booking.setPaymentStatus(BookingPaymentStatus.PAID);
+            } else {
+                booking.setPaymentStatus(BookingPaymentStatus.PARTIAL);
+            }
+        } else {
+            booking.setPaymentStatus(BookingPaymentStatus.PAID);
+        }
     }
 }

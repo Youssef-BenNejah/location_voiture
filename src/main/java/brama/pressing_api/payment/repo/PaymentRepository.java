@@ -13,4 +13,6 @@ public interface PaymentRepository extends MongoRepository<Payment, String> {
     Optional<Payment> findByIdAndUserId(String id, String userId);
 
     List<Payment> findByStatus(PaymentStatus status);
+
+    Optional<Payment> findByTransactionId(String transactionId);
 }

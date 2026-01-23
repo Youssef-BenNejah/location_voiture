@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface BookingRepository extends MongoRepository<Booking, String> {
+public interface BookingRepository extends MongoRepository<Booking, String>, BookingRepositoryCustom {
     List<Booking> findByUserId(String userId);
 
     Optional<Booking> findByIdAndUserId(String id, String userId);

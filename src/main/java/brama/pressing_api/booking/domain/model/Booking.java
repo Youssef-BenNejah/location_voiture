@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,9 +25,21 @@ public class Booking extends BaseDocument {
     @Indexed
     private String userId;
 
+    @Field("customer_name")
+    private String customerName;
+
+    @Field("customer_email")
+    private String customerEmail;
+
+    @Field("customer_phone")
+    private String customerPhone;
+
     @Field("vehicle_id")
     @Indexed
     private String vehicleId;
+
+    @Field("vehicle_name")
+    private String vehicleName;
 
     @Field("pickup_location_id")
     private String pickupLocationId;
@@ -48,6 +61,15 @@ public class Booking extends BaseDocument {
 
     @Field("payment_status")
     private BookingPaymentStatus paymentStatus;
+
+    @Field("created_by")
+    private BookingCreatedBy createdBy;
+
+    @Field("paid_amount")
+    private BigDecimal paidAmount;
+
+    @Field("payment_history")
+    private List<BookingPaymentEntry> paymentHistory;
 
     @Field("pricing")
     private BookingPricing pricing;

@@ -51,7 +51,22 @@ public enum ErrorCode {
     EXCURSION_BOOKING_STATUS_NOT_ALLOWED("EXCURSION_BOOKING_STATUS_NOT_ALLOWED", "Excursion booking status change is not allowed", BAD_REQUEST),
     FILE_REQUIRED("FILE_REQUIRED", "File is required", BAD_REQUEST),
     FILE_TOO_LARGE("FILE_TOO_LARGE", "File exceeds maximum size", BAD_REQUEST),
-    FILE_TYPE_NOT_ALLOWED("FILE_TYPE_NOT_ALLOWED", "File type is not allowed", BAD_REQUEST);
+    FILE_TYPE_NOT_ALLOWED("FILE_TYPE_NOT_ALLOWED", "File type is not allowed", BAD_REQUEST),
+    CHAT_INVALID_REQUEST("CHAT_INVALID_REQUEST", "Invalid chat request", BAD_REQUEST),
+    CHAT_MESSAGE_EMPTY("CHAT_MESSAGE_EMPTY", "Message content or attachments required", BAD_REQUEST),
+    CHAT_ACCESS_DENIED("CHAT_ACCESS_DENIED", "You do not have access to this conversation", FORBIDDEN),
+    CHAT_MESSAGE_EDIT_NOT_ALLOWED("CHAT_MESSAGE_EDIT_NOT_ALLOWED", "You cannot edit this message", FORBIDDEN),
+    CHAT_MESSAGE_DELETE_NOT_ALLOWED("CHAT_MESSAGE_DELETE_NOT_ALLOWED", "You cannot delete this message", FORBIDDEN),
+    CHAT_MESSAGE_DELETED("CHAT_MESSAGE_DELETED", "Message has been deleted", BAD_REQUEST),
+    BOOKING_INVALID_REQUEST("BOOKING_INVALID_REQUEST", "Invalid booking request", BAD_REQUEST),
+    PAYMENT_AMOUNT_INVALID("PAYMENT_AMOUNT_INVALID", "Payment amount is invalid", BAD_REQUEST),
+    CIRCUIT_NOT_FOUND("CIRCUIT_NOT_FOUND", "Circuit not found", NOT_FOUND),
+    CIRCUIT_INACTIVE("CIRCUIT_INACTIVE", "Circuit is inactive", BAD_REQUEST),
+    CIRCUIT_BOOKING_NOT_FOUND("CIRCUIT_BOOKING_NOT_FOUND", "Circuit booking not found", NOT_FOUND),
+    CIRCUIT_PASSENGERS_LIMIT("CIRCUIT_PASSENGERS_LIMIT", "Requested passengers exceed the allowed limit", BAD_REQUEST),
+    CIRCUIT_BOOKING_STATUS_NOT_ALLOWED("CIRCUIT_BOOKING_STATUS_NOT_ALLOWED", "Circuit booking status change not allowed", BAD_REQUEST),
+    CIRCUIT_DATE_INVALID("CIRCUIT_DATE_INVALID", "Selected date must be today or later", BAD_REQUEST),
+    CIRCUIT_ACCESS_DENIED("CIRCUIT_ACCESS_DENIED", "You do not have access to this circuit booking", FORBIDDEN);
     ;
 
     private final String code;
