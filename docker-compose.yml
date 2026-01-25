@@ -1,7 +1,7 @@
 services:
 
   mail-dev:
-    container_name: mail-dev-pressing
+    container_name: mail-dev-location
     image: maildev/maildev
     ports:
       - 1080-1080
