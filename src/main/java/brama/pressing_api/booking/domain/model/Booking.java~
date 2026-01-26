@@ -62,8 +62,8 @@ public class Booking extends BaseDocument {
     @Field("payment_status")
     private BookingPaymentStatus paymentStatus;
 
-    @Field("booking_created_by")  // RENAMED FIELD
-    private BookingCreatedBy bookingCreatedBy;
+    @Field("created_by")
+    private BookingCreatedBy createdBy;
 
     @Field("paid_amount")
     private BigDecimal paidAmount;
