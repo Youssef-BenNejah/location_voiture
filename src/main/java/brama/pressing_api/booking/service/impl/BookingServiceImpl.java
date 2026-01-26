@@ -88,7 +88,7 @@ public class BookingServiceImpl implements BookingService {
                 .endDate(request.getEndDate())
                 .status(BookingStatus.PENDING)
                 .paymentStatus(BookingPaymentStatus.UNPAID)
-                .createdBy(BookingCreatedBy.CLIENT)
+                .bookingCreatedBy(BookingCreatedBy.CLIENT)
                 .paidAmount(BigDecimal.ZERO)
                 .paymentHistory(new ArrayList<>())
                 .extras(BookingMapper.toExtras(request.getExtras()))
@@ -183,7 +183,7 @@ public class BookingServiceImpl implements BookingService {
                 .endDate(request.getEndDate())
                 .status(BookingStatus.PENDING)
                 .paymentStatus(BookingPaymentStatus.UNPAID)
-                .createdBy(BookingCreatedBy.ADMIN)
+                .bookingCreatedBy(BookingCreatedBy.ADMIN)
                 .paidAmount(BigDecimal.ZERO)
                 .paymentHistory(new ArrayList<>())
                 .notes(request.getNotes())
@@ -308,7 +308,7 @@ public class BookingServiceImpl implements BookingService {
                     .append(booking.getPaymentStatus() != null ? booking.getPaymentStatus().name() : "").append(',')
                     .append(nullSafe(booking.getPricing() != null ? booking.getPricing().getTotal() : null)).append(',')
                     .append(nullSafe(booking.getPaidAmount())).append(',')
-                    .append(booking.getCreatedBy() != null ? booking.getCreatedBy().name() : "").append(',')
+                    .append(booking.getCreatedBy() != null ? booking.getBookingCreatedBy().name() : "").append(',')
                     .append(nullSafe(booking.getCreatedDate()))
                     .append('\n');
         }
@@ -409,7 +409,7 @@ public class BookingServiceImpl implements BookingService {
         return List.of(user.getFirstName(), user.getLastName()).stream()
                 .filter(Objects::nonNull)
                 .filter(value -> !value.isBlank())
-                .collect(Collectors.joining(\" \"))
+                .collect(Collectors.joining(" "))
                 .trim();
     }
 
@@ -421,18 +421,18 @@ public class BookingServiceImpl implements BookingService {
                 .stream()
                 .filter(Objects::nonNull)
                 .filter(value -> !value.isBlank())
-                .collect(Collectors.joining(\" \")).trim();
+                .collect(Collectors.joining(" ")).trim();
     }
 
     private String csv(final String value) {
         if (value == null) {
-            return \"\";
+            return "";
         }
-        String escaped = value.replace(\"\\\"\", \"\\\"\\\"\");
-        return \"\\\"\" + escaped + \"\\\"\";
+        String escaped = value.replace("\"", "\"\"");
+        return "\"" + escaped + "\"";
     }
 
     private String nullSafe(final Object value) {
-        return value == null ? \"\" : value.toString();
+        return value == null ? "" : value.toString();
     }
 }
