@@ -6,8 +6,11 @@ import brama.pressing_api.otp.request.VerifyOtpRequest;
 import brama.pressing_api.otp.response.OtpResponse;
 import brama.pressing_api.otp.response.VerifyOtpResponse;
 
-
+import brama.pressing_api.exception.BusinessException;
+import brama.pressing_api.exception.ErrorCode;
 import brama.pressing_api.token.TokenService;
+import brama.pressing_api.user.User;
+import brama.pressing_api.user.UserRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,16 +31,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Otp", description = "Otp API")
 public class OtpController {
     private final TokenService tokenService;
+    private final UserRepository userRepository;
 
     /**
      * Generates a new OTP for a user and purpose.
      */
     @PostMapping("/generate")
     public ResponseEntity<OtpResponse> generateOtp(@Valid @RequestBody GenerateOtpRequest request) {
-        log.info("Generating OTP for user: {} with purpose: {}", request.getUserId(), request.getPurpose());
+        log.info("Generating OTP for email: {} with purpose: {}", request.getEmail(), request.getPurpose());
+
+        final String userId = resolveUserId(request.getEmail());
 
          tokenService.generateOtpToken(
-                request.getUserId(),
+                userId,
                 request.getPurpose());
 
 
@@ -52,10 +58,12 @@ public class OtpController {
      */
     @PostMapping("/verify")
     public ResponseEntity<VerifyOtpResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        log.info("Verifying OTP for user: {} with purpose: {}", request.getUserId(), request.getPurpose());
+        log.info("Verifying OTP for email: {} with purpose: {}", request.getEmail(), request.getPurpose());
+
+        final String userId = resolveUserId(request.getEmail());
 
         boolean isValid = tokenService.verifyOtpToken(
-                request.getUserId(),
+                userId,
                 request.getOtpCode(),
                 request.getPurpose()
         );
@@ -71,17 +79,19 @@ public class OtpController {
      */
     @PostMapping("/resend")
     public ResponseEntity<OtpResponse> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
-        log.info("Resending OTP for user: {} with purpose: {}", request.getUserId(), request.getPurpose());
+        log.info("Resending OTP for email: {} with purpose: {}", request.getEmail(), request.getPurpose());
+
+        final String userId = resolveUserId(request.getEmail());
 
         // Revoke existing OTP
         tokenService.revokeExistingOtpTokens(
-                request.getUserId(),
+                userId,
                request.getPurpose()
         );
 
         // Generate new OTP
         tokenService.generateOtpToken(
-                request.getUserId(),
+                userId,
                request.getPurpose()
         );
 
@@ -89,5 +99,11 @@ public class OtpController {
                 .message("New OTP sent successfully to your registered email")
                 .expiresInMinutes(10)
                 .build());
+    }
+
+    private String resolveUserId(final String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return user.getId();
     }
 }

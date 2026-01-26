@@ -12,6 +12,7 @@ import brama.pressing_api.role.Role;
 import brama.pressing_api.role.RoleRepository;
 import brama.pressing_api.security.JwtService;
 import brama.pressing_api.token.TokenService;
+import brama.pressing_api.token.OtpPurpose;
 import brama.pressing_api.user.User;
 import brama.pressing_api.user.UserMapper;
 import brama.pressing_api.user.UserRepository;
@@ -50,6 +51,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 )
         );
         final User user = (User) auth.getPrincipal();
+        if (!user.isEmailVerified()) {
+            throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
         final String accessToken = this.jwtService.generateAccessToken(user);
         final String refreshToken=this.jwtService.generateRefreshToken(user);
         LocalDateTime expirationTime = this.jwtService.extractExpiration(refreshToken)
@@ -83,6 +87,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         log.debug("Saving user {}", user);
         this.userRepository.save(user);
+        this.tokenService.generateOtpToken(user.getId(), OtpPurpose.EMAIL_VERIFICATION);
 
     }
 

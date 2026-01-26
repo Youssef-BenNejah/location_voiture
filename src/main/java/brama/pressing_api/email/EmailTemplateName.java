@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum EmailTemplateName {
     OTP_VERIFICATION("otp-verification"),
+    EMAIL_VERIFICATION("email-verification"),
     ACTIVATE_ACCOUNT("activate-account"),
     PASSWORD_RESET("password-reset"),
     WELCOME_EMAIL("welcome-email"),

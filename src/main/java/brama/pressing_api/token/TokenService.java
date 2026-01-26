@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -24,6 +25,8 @@ import java.util.Random;
 @RequiredArgsConstructor
 @Slf4j
 public class TokenService {
+    @Value("${app.frontend-url:http://localhost:4200}")
+    private String frontendUrl;
     @Value("${app.security.otp.length}")
     private int otpLength;
 
@@ -128,13 +131,32 @@ public class TokenService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-            emailService.sendOtpEmail(
-                    user.getEmail(),
-                    user.getUsername(),
-                    otpCode,
-                    purpose.name(),
-                    String.valueOf(otpExpiryMinutes)
-            );
+            String displayName = user.getFirstName() != null && !user.getFirstName().isBlank()
+                    ? user.getFirstName()
+                    : user.getEmail();
+            if (purpose == OtpPurpose.EMAIL_VERIFICATION) {
+                String verificationUrl = UriComponentsBuilder.fromHttpUrl(frontendUrl)
+                        .path("/verify-email")
+                        .queryParam("userId", userId)
+                        .queryParam("code", otpCode)
+                        .build()
+                        .toUriString();
+                emailService.sendEmailVerificationEmail(
+                        user.getEmail(),
+                        displayName,
+                        otpCode,
+                        verificationUrl,
+                        String.valueOf(otpExpiryMinutes)
+                );
+            } else {
+                emailService.sendOtpEmail(
+                        user.getEmail(),
+                        displayName,
+                        otpCode,
+                        purpose.name(),
+                        String.valueOf(otpExpiryMinutes)
+                );
+            }
             log.info("OTP email sent successfully to user: {}", userId);
         } catch (MessagingException e) {
             log.error("Failed to send OTP email to user: {}, but OTP was generated successfully", userId, e);
@@ -211,6 +233,15 @@ public class TokenService {
         // OTP is valid - mark as used
         otpToken.markAsUsed();
         tokenRepository.save(otpToken);
+
+        if (purpose == OtpPurpose.EMAIL_VERIFICATION) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+            if (!user.isEmailVerified()) {
+                user.setEmailVerified(true);
+                userRepository.save(user);
+            }
+        }
 
         log.info("OTP verified successfully for user: {} with purpose: {}", userId, purpose);
         return true;

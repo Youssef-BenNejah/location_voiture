@@ -33,6 +33,22 @@ public class EmailService {
         String subject = getSubjectForPurpose(purpose);
         sendEmail(to, subject, EmailTemplateName.OTP_VERIFICATION, properties);
     }
+
+    @Async
+    public void sendEmailVerificationEmail(String to,
+                                           String username,
+                                           String otpCode,
+                                           String verificationUrl,
+                                           String expiryMinutes) throws MessagingException {
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("username", username);
+        properties.put("otpCode", otpCode);
+        properties.put("verificationUrl", verificationUrl);
+        properties.put("expiryMinutes", expiryMinutes);
+
+        String subject = getSubjectForPurpose("EMAIL_VERIFICATION");
+        sendEmail(to, subject, EmailTemplateName.EMAIL_VERIFICATION, properties);
+    }
     @Async
     public void sendEmail(String to, String subject, EmailTemplateName emailTemplate, Map<String, Object> properties) throws MessagingException {
         String templateName = emailTemplate.getName();

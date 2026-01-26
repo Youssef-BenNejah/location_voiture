@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .container {
+            background: #ffffff;
+            border-radius: 18px;
+            max-width: 640px;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .header {
+            padding: 36px 32px;
+            background: #0f172a;
+            color: #ffffff;
+            text-align: left;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 15px;
+            color: #cbd5f5;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+
+        .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            background: #f8fafc;
+            margin: 20px 0 28px;
+        }
+
+        .otp-code {
+            display: inline-block;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: #0f766e;
+            background: #ecfdf5;
+            border: 1px dashed #34d399;
+            padding: 10px 16px;
+            border-radius: 10px;
+        }
+
+        .button {
+            display: inline-block;
+            background: #0ea5e9;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        .button:hover {
+            background: #0284c7;
+        }
+
+        .muted {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 24px 0;
+        }
+
+        .footer {
+            padding: 24px 32px 32px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: #0ea5e9;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Verify your email address</h1>
+        <p>Finish setting up your account in minutes.</p>
+    </div>
+
+    <div class="content">
+        <div class="greeting">
+            Hello <strong th:text="${username}">there</strong>,
+        </div>
+
+        <p>
+            Thank you for creating your account. Please confirm your email to activate access.
+        </p>
+
+        <div class="card">
+            <p class="muted" style="margin-bottom: 10px;">Your verification code</p>
+            <div class="otp-code" th:text="${otpCode}">123456</div>
+            <p class="muted" style="margin-top: 12px;">
+                This code expires in <strong th:text="${expiryMinutes}">10</strong> minutes.
+            </p>
+            <a class="button" th:href="${verificationUrl}" href="#">Verify email</a>
+        </div>
+
+        <p class="muted">
+            If the button does not work, copy and paste this link into your browser:
+        </p>
+        <p class="muted" th:text="${verificationUrl}">https://example.com/verify-email</p>
+
+        <div class="divider"></div>
+
+        <p class="muted">
+            If you did not create this account, you can safely ignore this email.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>Need help? <a href="#">Contact support</a></p>
+        <p style="margin-top: 8px;">Copyright 2026 Car Joy Platform</p>
+    </div>
+</div>
+</body>
+</html>

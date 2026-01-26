@@ -18,6 +18,7 @@ public enum ErrorCode {
     ERR_USER_DISABLED("ERR_USER_DISABLED",
             "User account is disabled, please activate your account or contact the administrator",
             UNAUTHORIZED),
+    EMAIL_NOT_VERIFIED("EMAIL_NOT_VERIFIED", "Email address is not verified", UNAUTHORIZED),
     INVALID_CURRENT_PASSWORD("INVALID_CURRENT_PASSWORD", "The current password is incorrect", BAD_REQUEST),
     USER_NOT_FOUND("USER_NOT_FOUND", "User not found", NOT_FOUND),
     ACCOUNT_ALREADY_DEACTIVATED("ACCOUNT_ALREADY_DEACTIVATED", "Account has been deactivated", BAD_REQUEST),
