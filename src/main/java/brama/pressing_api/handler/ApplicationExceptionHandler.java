@@ -35,7 +35,12 @@ public class ApplicationExceptionHandler {
                 .build();
         log.info("Business exception {}", ex.getMessage());
         log.debug(ex.getMessage(), ex);
-        return ResponseEntity.status(ex.getErrorCode().getStatus() != null ? ex.getErrorCode().getStatus() : HttpStatus.BAD_REQUEST).body(body);
+        HttpStatus status = ex.getErrorCode().getStatus();
+        if (ex.getErrorCode() == ErrorCode.OTP_RATE_LIMIT_EXCEEDED
+                || ex.getErrorCode() == ErrorCode.OTP_MAX_ATTEMPTS_EXCEEDED) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
+        }
+        return ResponseEntity.status(status != null ? status : HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(DisabledException.class)

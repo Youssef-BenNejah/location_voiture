@@ -65,4 +65,5 @@ public class UpdateVehicleRequest {
     private String description;
     private List<String> features;
     private List<String> images;
+    private List<String> documents;
 }

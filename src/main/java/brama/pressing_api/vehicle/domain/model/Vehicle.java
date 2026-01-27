@@ -93,6 +93,9 @@ public class Vehicle extends BaseDocument {
     @Field("images")
     private List<String> images;
 
+    @Field("documents")
+    private List<String> documents;
+
     @Field("rating_avg")
     private Double ratingAverage;
 

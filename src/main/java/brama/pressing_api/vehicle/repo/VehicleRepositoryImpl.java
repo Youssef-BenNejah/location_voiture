@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 public class VehicleRepositoryImpl implements VehicleRepositoryCustom {
@@ -22,6 +23,20 @@ public class VehicleRepositoryImpl implements VehicleRepositoryCustom {
         Query query = new Query();
         List<Criteria> filters = new ArrayList<>();
 
+        if (criteria.getSearch() != null && !criteria.getSearch().isBlank()) {
+            String regex = ".*" + Pattern.quote(criteria.getSearch().trim()) + ".*";
+            filters.add(new Criteria().orOperator(
+                    Criteria.where("_id").regex(regex, "i"),
+                    Criteria.where("make").regex(regex, "i"),
+                    Criteria.where("model").regex(regex, "i"),
+                    Criteria.where("trim").regex(regex, "i"),
+                    Criteria.where("color").regex(regex, "i"),
+                    Criteria.where("license_plate").regex(regex, "i"),
+                    Criteria.where("vin").regex(regex, "i"),
+                    Criteria.where("location_id").regex(regex, "i"),
+                    Criteria.where("description").regex(regex, "i")
+            ));
+        }
         if (criteria.getLocationId() != null && !criteria.getLocationId().isBlank()) {
             filters.add(Criteria.where("location_id").is(criteria.getLocationId()));
         }

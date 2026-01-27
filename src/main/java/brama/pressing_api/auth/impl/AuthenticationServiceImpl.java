@@ -4,6 +4,7 @@ import brama.pressing_api.auth.AuthenticationService;
 import brama.pressing_api.auth.request.AuthenticationRequest;
 import brama.pressing_api.auth.request.RefreshRequest;
 import brama.pressing_api.auth.request.RegistrationRequest;
+import brama.pressing_api.auth.request.ResetPasswordRequest;
 import brama.pressing_api.auth.response.AuthenticationResponse;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
 
 
     @Override
@@ -100,6 +103,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .tokenType("Bearer")
                 .build();
 
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        checkPassword(request.getNewPassword(), request.getConfirmPassword());
+
+        final User user = this.userRepository.findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        final String encoded = this.passwordEncoder.encode(request.getNewPassword());
+        user.setPassword(encoded);
+        this.userRepository.save(user);
     }
     private void checkPassword(String password, String confirmPassword) {
         if(password == null || !password.equals(confirmPassword))

@@ -34,6 +34,7 @@ public final class VehicleMapper {
                 .description(request.getDescription())
                 .features(request.getFeatures())
                 .images(request.getImages())
+                .documents(request.getDocuments())
                 .ratingAverage(0.0)
                 .ratingCount(0)
                 .build();
@@ -109,6 +110,9 @@ public final class VehicleMapper {
         if (request.getImages() != null) {
             vehicle.setImages(request.getImages());
         }
+        if (request.getDocuments() != null) {
+            vehicle.setDocuments(request.getDocuments());
+        }
     }
 
     public static VehicleResponse toResponse(final Vehicle vehicle) {
@@ -137,6 +141,7 @@ public final class VehicleMapper {
                 .description(vehicle.getDescription())
                 .features(vehicle.getFeatures())
                 .images(vehicle.getImages())
+                .documents(vehicle.getDocuments())
                 .ratingAverage(vehicle.getRatingAverage())
                 .ratingCount(vehicle.getRatingCount())
                 .createdDate(vehicle.getCreatedDate())

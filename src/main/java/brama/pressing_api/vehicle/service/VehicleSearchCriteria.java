@@ -14,6 +14,7 @@ import java.util.Set;
 @Getter
 @Builder
 public class VehicleSearchCriteria {
+    private String search;
     private String locationId;
     private LocalDate startDate;
     private LocalDate endDate;

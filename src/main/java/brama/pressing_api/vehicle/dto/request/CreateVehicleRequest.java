@@ -88,4 +88,6 @@ public class CreateVehicleRequest {
     private List<String> features;
 
     private List<String> images;
+
+    private List<String> documents;
 }

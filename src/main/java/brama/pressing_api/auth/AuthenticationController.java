@@ -3,6 +3,7 @@ package brama.pressing_api.auth;
 import brama.pressing_api.auth.request.AuthenticationRequest;
 import brama.pressing_api.auth.request.RefreshRequest;
 import brama.pressing_api.auth.request.RegistrationRequest;
+import brama.pressing_api.auth.request.ResetPasswordRequest;
 import brama.pressing_api.auth.response.AuthenticationResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -58,4 +59,15 @@ public class AuthenticationController {
         return ResponseEntity.ok(this.service.refreshToken(req));
     }
 
+    /**
+     * Resets a user's password using their email.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @Valid
+            @RequestBody
+            final ResetPasswordRequest request) {
+        this.service.resetPassword(request);
+        return ResponseEntity.ok().build();
+    }
 }

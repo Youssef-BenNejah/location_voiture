@@ -44,6 +44,7 @@ public class VehicleResponse {
     private String description;
     private List<String> features;
     private List<String> images;
+    private List<String> documents;
     private Double ratingAverage;
     private Integer ratingCount;
     private LocalDateTime createdDate;

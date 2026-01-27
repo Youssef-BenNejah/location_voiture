@@ -31,7 +31,8 @@ public class PressingApiApplication {
 											  final PasswordEncoder passwordEncoder,
 											  @Value("${app.seed.admin.email:omar.hammamet@carjoy.local}") final String adminEmail,
 											  @Value("${app.seed.admin.phone:+21600000000}") final String adminPhone,
-											  @Value("${app.seed.admin.password:Admin@12345}") final String adminPassword) {
+											  @Value("${app.seed.admin.password:" +
+													  "}") final String adminPassword) {
 		return args -> {
 			final Optional<Role> userRole = roleRepository.findByName("USER");
 			if (userRole.isEmpty()) {
