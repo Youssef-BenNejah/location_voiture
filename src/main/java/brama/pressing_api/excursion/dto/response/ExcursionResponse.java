@@ -1,6 +1,7 @@
 package brama.pressing_api.excursion.dto.response;
 
 import brama.pressing_api.excursion.domain.model.ExcursionDurationType;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,11 +33,12 @@ public class ExcursionResponse {
     private BigDecimal pricePerPerson;
     private Integer totalCapacity;
     private Integer bookedSeats;
-    private List<LocalDate> availableDates;
+
+    private List<String> availableDates;
     private List<String> images;
     private Boolean isEnabled;
     private String category;
     private List<String> highlights;
-    private LocalDateTime createdDate;
-    private LocalDateTime lastModifiedDate;
+    private String createdDate;
+    private String lastModifiedDate;
 }

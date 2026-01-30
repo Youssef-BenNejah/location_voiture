@@ -11,6 +11,7 @@ import brama.pressing_api.excursion.dto.response.ExcursionResponse;
 import brama.pressing_api.excursion.dto.response.ExcursionStopResponse;
 import brama.pressing_api.excursion.dto.response.ItineraryDayResponse;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -117,13 +118,19 @@ public final class ExcursionMapper {
                 .pricePerPerson(excursion.getPricePerPerson())
                 .totalCapacity(excursion.getTotalCapacity())
                 .bookedSeats(excursion.getBookedSeats())
-                .availableDates(defaultList(excursion.getAvailableDates()))
+                .availableDates(
+                        excursion.getAvailableDates() != null
+                                ? excursion.getAvailableDates().stream()
+                                .map(LocalDate::toString)
+                                .collect(Collectors.toList())
+                                : Collections.emptyList()
+                )
                 .images(defaultList(excursion.getImages()))
                 .isEnabled(excursion.getIsEnabled())
                 .category(excursion.getCategory())
                 .highlights(defaultList(excursion.getHighlights()))
-                .createdDate(excursion.getCreatedDate())
-                .lastModifiedDate(excursion.getLastModifiedDate())
+                .createdDate(excursion.getCreatedDate() != null ? excursion.getCreatedDate().toString() : null)
+                .lastModifiedDate(excursion.getLastModifiedDate() != null ? excursion.getLastModifiedDate().toString() : null)
                 .build();
     }
 
