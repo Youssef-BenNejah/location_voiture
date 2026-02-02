@@ -67,10 +67,11 @@ public class ChatServiceImpl implements ChatService {
         if (userId.equals(otherUserId)) {
             throw new BusinessException(ErrorCode.CHAT_INVALID_REQUEST);
         }
-        User otherUser = userRepository.findById(otherUserId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        User currentUser = getUserOrThrow(userId);
+        User otherUser = getUserOrThrow(otherUserId);
+        enforceAdminClientAccess(currentUser, otherUser);
 
-        Conversation conversation = getOrCreateConversation(userId, otherUserId);
+        Conversation conversation = getOrCreateConversation(userId, otherUser);
         UserPresence presence = presenceService.findByUserIds(List.of(otherUserId))
                 .get(otherUserId);
         return ChatMapper.toConversationResponse(conversation, otherUser, presence, userId);
@@ -78,35 +79,11 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatConversationResponse> listConversations(final String userId) {
-        List<Conversation> conversations = conversationRepository.findByParticipantIdsContaining(userId);
-        if (conversations.isEmpty()) {
-            return Collections.emptyList();
+        User currentUser = getUserOrThrow(userId);
+        if (isAdmin(currentUser)) {
+            return listAdminConversations(currentUser);
         }
-
-        conversations.sort(Comparator.comparing(Conversation::getLastMessageAt,
-                        Comparator.nullsLast(Comparator.naturalOrder())).reversed());
-
-        Set<String> otherUserIds = conversations.stream()
-                .map(conversation -> getOtherParticipant(conversation, userId))
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
-
-        Map<String, User> userMap = userRepository.findAllById(otherUserIds)
-                .stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
-        Map<String, UserPresence> presenceMap = presenceService.findByUserIds(otherUserIds);
-
-        return conversations.stream()
-                .map(conversation -> {
-                    String otherUserId = getOtherParticipant(conversation, userId);
-                    return ChatMapper.toConversationResponse(
-                            conversation,
-                            userMap.get(otherUserId),
-                            presenceMap.get(otherUserId),
-                            userId
-                    );
-                })
-                .collect(Collectors.toList());
+        return listClientConversations(currentUser);
     }
 
     @Override
@@ -125,8 +102,9 @@ public class ChatServiceImpl implements ChatService {
     public ChatMessageResponse sendMessage(final SendChatMessageRequest request, final String senderId) {
         validateMessageRequest(request);
 
-        Conversation conversation = resolveConversation(request, senderId);
-        String recipientId = resolveRecipient(request, conversation, senderId);
+        User sender = getUserOrThrow(senderId);
+        Conversation conversation = resolveConversation(request, sender);
+        String recipientId = resolveRecipient(request, conversation, sender);
 
         List<ChatAttachment> attachments = ChatMapper.toAttachments(request.getAttachments());
         ChatMessageType type = resolveType(request.getType(), request.getContent(), attachments);
@@ -313,27 +291,35 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
-    private Conversation resolveConversation(final SendChatMessageRequest request, final String senderId) {
+    private Conversation resolveConversation(final SendChatMessageRequest request, final User sender) {
         if (StringUtils.isNotBlank(request.getConversationId())) {
-            return getConversationForUser(request.getConversationId(), senderId);
+            return getConversationForUser(request.getConversationId(), sender.getId());
         }
         String recipientId = request.getRecipientId();
         if (StringUtils.isBlank(recipientId)) {
             throw new BusinessException(ErrorCode.CHAT_INVALID_REQUEST);
         }
-        if (senderId.equals(recipientId)) {
+        if (sender.getId().equals(recipientId)) {
             throw new BusinessException(ErrorCode.CHAT_INVALID_REQUEST);
         }
-        return getOrCreateConversation(senderId, recipientId);
+        User recipient = getUserOrThrow(recipientId);
+        enforceAdminClientAccess(sender, recipient);
+        return getOrCreateConversation(sender.getId(), recipient);
     }
 
     private String resolveRecipient(final SendChatMessageRequest request,
                                     final Conversation conversation,
-                                    final String senderId) {
+                                    final User sender) {
         if (StringUtils.isNotBlank(request.getRecipientId())) {
+            if (!isAdmin(sender)) {
+                User recipient = getUserOrThrow(request.getRecipientId());
+                if (!isAdmin(recipient)) {
+                    throw new BusinessException(ErrorCode.CHAT_ACCESS_DENIED);
+                }
+            }
             return request.getRecipientId();
         }
-        String otherUserId = getOtherParticipant(conversation, senderId);
+        String otherUserId = getOtherParticipant(conversation, sender.getId());
         if (StringUtils.isBlank(otherUserId)) {
             throw new BusinessException(ErrorCode.CHAT_INVALID_REQUEST);
         }
@@ -341,9 +327,11 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private Conversation getOrCreateConversation(final String userId, final String otherUserId) {
-        User otherUser = userRepository.findById(otherUserId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        User otherUser = getUserOrThrow(otherUserId);
+        return getOrCreateConversation(userId, otherUser);
+    }
 
+    private Conversation getOrCreateConversation(final String userId, final User otherUser) {
         Optional<Conversation> existing = conversationRepository.findDirectConversation(userId, otherUser.getId());
         if (existing.isPresent()) {
             return existing.get();
@@ -360,6 +348,17 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new EntityNotFoundException("Conversation not found"));
         if (conversation.getParticipantIds() == null || !conversation.getParticipantIds().contains(userId)) {
             throw new BusinessException(ErrorCode.CHAT_ACCESS_DENIED);
+        }
+        User currentUser = getUserOrThrow(userId);
+        if (!isAdmin(currentUser)) {
+            String otherUserId = getOtherParticipant(conversation, userId);
+            if (StringUtils.isBlank(otherUserId)) {
+                throw new BusinessException(ErrorCode.CHAT_ACCESS_DENIED);
+            }
+            User otherUser = getUserOrThrow(otherUserId);
+            if (!isAdmin(otherUser)) {
+                throw new BusinessException(ErrorCode.CHAT_ACCESS_DENIED);
+            }
         }
         return conversation;
     }
@@ -497,5 +496,107 @@ public class ChatServiceImpl implements ChatService {
             return ChatMessageType.TEXT;
         }
         return ChatMessageType.SYSTEM;
+    }
+
+    private List<ChatConversationResponse> listAdminConversations(final User admin) {
+        List<User> clients = userRepository.findAll().stream()
+                .filter(user -> user != null && !admin.getId().equals(user.getId()))
+                .filter(user -> !isAdmin(user))
+                .collect(Collectors.toList());
+        if (clients.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, UserPresence> presenceMap = presenceService.findByUserIds(
+                clients.stream().map(User::getId).collect(Collectors.toList())
+        );
+
+        List<ChatConversationResponse> responses = new ArrayList<>();
+        for (User client : clients) {
+            Conversation conversation = getOrCreateConversation(admin.getId(), client);
+            responses.add(ChatMapper.toConversationResponse(
+                    conversation,
+                    client,
+                    presenceMap.get(client.getId()),
+                    admin.getId()
+            ));
+        }
+        responses.sort(Comparator.comparing(ChatConversationResponse::getLastMessageAt,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed());
+        return responses;
+    }
+
+    private List<ChatConversationResponse> listClientConversations(final User client) {
+        List<User> admins = userRepository.findAll().stream()
+                .filter(this::isAdmin)
+                .sorted(Comparator.comparing(User::getId))
+                .collect(Collectors.toList());
+        if (admins.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, User> adminMap = admins.stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        Map<String, UserPresence> presenceMap = presenceService.findByUserIds(adminMap.keySet());
+
+        List<Conversation> conversations = conversationRepository.findByParticipantIdsContaining(client.getId());
+        List<ChatConversationResponse> responses = new ArrayList<>();
+        for (Conversation conversation : conversations) {
+            String otherUserId = getOtherParticipant(conversation, client.getId());
+            User admin = adminMap.get(otherUserId);
+            if (admin == null) {
+                continue;
+            }
+            responses.add(ChatMapper.toConversationResponse(
+                    conversation,
+                    admin,
+                    presenceMap.get(otherUserId),
+                    client.getId()
+            ));
+        }
+
+        if (responses.isEmpty()) {
+            User admin = admins.get(0);
+            Conversation conversation = getOrCreateConversation(client.getId(), admin);
+            responses.add(ChatMapper.toConversationResponse(
+                    conversation,
+                    admin,
+                    presenceMap.get(admin.getId()),
+                    client.getId()
+            ));
+        }
+
+        responses.sort(Comparator.comparing(ChatConversationResponse::getLastMessageAt,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed());
+        return responses;
+    }
+
+    private User getUserOrThrow(final String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private boolean isAdmin(final User user) {
+        return hasRole(user, "ADMIN");
+    }
+
+    private boolean hasRole(final User user, final String role) {
+        if (user == null || user.getRoles() == null) {
+            return false;
+        }
+        String target = role.toUpperCase();
+        return user.getRoles().stream()
+                .filter(StringUtils::isNotBlank)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .anyMatch(value -> value.equals(target) || value.equals("ROLE_" + target));
+    }
+
+    private void enforceAdminClientAccess(final User currentUser, final User otherUser) {
+        if (!isAdmin(currentUser) && !isAdmin(otherUser)) {
+            throw new BusinessException(ErrorCode.CHAT_ACCESS_DENIED);
+        }
     }
 }

@@ -89,11 +89,17 @@ public class ApplicationExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(final Exception ex) {
-        log.info("Internal exception {}", ex.getMessage());
-        log.debug(ex.getMessage(), ex);
+        // ⚠️ LOG THE FULL STACK TRACE
+        log.error("❌❌❌ INTERNAL EXCEPTION - FULL DETAILS ❌❌❌", ex);
+        log.error("Exception type: {}", ex.getClass().getName());
+        log.error("Exception message: {}", ex.getMessage());
+
+        // Print stack trace to console
+        ex.printStackTrace();
+
         final ErrorResponse body = ErrorResponse.builder()
                 .code(ErrorCode.INTERNAL_EXCEPTION.getCode())
-                .message(ErrorCode.INTERNAL_EXCEPTION.getDefaultMessage())
+                .message(ex.getMessage()) // ⚠️ Changed: show actual error message instead of generic one
                 .build();
         return ResponseEntity.status(ErrorCode.INTERNAL_EXCEPTION.getStatus()).body(body);
     }

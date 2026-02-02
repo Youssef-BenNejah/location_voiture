@@ -36,6 +36,7 @@ public class SecurityConfig {
             "/webjars/**",
             "/swagger-ui.html",
             "/api/v1/otp/**",
+            "/api/v1/ws/**"
     };
     private final JwtFilter jwtFilter;
 

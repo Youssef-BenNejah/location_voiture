@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Upload endpoints for images and documents (Cloudinary backed).
@@ -38,5 +40,32 @@ public class UploadController {
     @PostMapping("/documents")
     public ResponseEntity<UploadResponse> uploadDocument(@RequestPart("file") MultipartFile file) throws IOException {
         return ResponseEntity.status(HttpStatus.CREATED).body(uploadService.uploadDocument(file));
+    }
+    /**
+     * Upload multiple files for chat (supports both images and documents)
+     */
+    @PostMapping("/chat")
+    public ResponseEntity<List<UploadResponse>> uploadChatFiles(
+            @RequestPart("files") List<MultipartFile> files) throws IOException {
+
+        List<UploadResponse> responses = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            // Determine if file is image or document based on content type
+            String contentType = file.getContentType();
+            UploadResponse response;
+
+            if (contentType != null && contentType.startsWith("image/")) {
+                response = uploadService.uploadImage(file);
+            } else {
+                response = uploadService.uploadDocument(file);
+            }
+
+            // Add fileName to response
+            response.setFileName(file.getOriginalFilename());
+            responses.add(response);
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 }

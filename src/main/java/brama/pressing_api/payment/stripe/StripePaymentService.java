@@ -68,6 +68,7 @@ public class StripePaymentService {
                 .setCurrency(currency.toLowerCase())
                 .putMetadata("bookingId", booking.getId())
                 .putMetadata("paymentId", saved.getId())
+                .putMetadata("userId", userId) // ✅ Add userId for tracking
                 .setAutomaticPaymentMethods(
                         PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                                 .setEnabled(true)
@@ -78,6 +79,12 @@ public class StripePaymentService {
             PaymentIntent intent = PaymentIntent.create(params);
             saved.setTransactionId(intent.getId());
             paymentRepository.save(saved);
+
+            // ✅ If payment is already succeeded (immediate confirmation), update status
+            if ("succeeded".equals(intent.getStatus())) {
+                paymentService.updateStatus(saved.getId(), PaymentStatus.PAID);
+            }
+
             return StripePaymentIntentResponse.builder()
                     .paymentId(saved.getId())
                     .bookingId(booking.getId())
@@ -131,15 +138,23 @@ public class StripePaymentService {
         if (paymentIntentId == null || paymentIntentId.isBlank()) {
             return;
         }
+
+        System.out.println("🔔 Webhook received: " + eventType + " for intent: " + paymentIntentId);
+
         Payment payment = paymentRepository.findByTransactionId(paymentIntentId)
                 .orElse(null);
         if (payment == null) {
+            System.out.println("⚠️ Payment not found for intent: " + paymentIntentId);
             return;
         }
+
         PaymentStatus status = mapStatusForEvent(eventType);
         if (status == null) {
+            System.out.println("⚠️ Unknown event type: " + eventType);
             return;
         }
+
+        System.out.println("✅ Updating payment " + payment.getId() + " to status: " + status);
         paymentService.updateStatus(payment.getId(), status);
     }
 

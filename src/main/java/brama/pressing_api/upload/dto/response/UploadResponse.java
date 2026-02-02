@@ -17,4 +17,5 @@ public class UploadResponse {
     private String secureUrl;
     private String format;
     private Long bytes;
+    private String fileName;
 }

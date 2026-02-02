@@ -413,17 +413,27 @@ public class BookingServiceImpl implements BookingService {
                 .trim();
     }
 
-    private String resolveVehicleName(final Vehicle vehicle) {
-        if (vehicle == null) {
-            return null;
-        }
-        return List.of(vehicle.getMake(), vehicle.getModel(), vehicle.getTrim())
-                .stream()
-                .filter(Objects::nonNull)
-                .filter(value -> !value.isBlank())
-                .collect(Collectors.joining(" ")).trim();
-    }
+    private String resolveVehicleName(Vehicle vehicle) {
+        List<String> nameParts = new ArrayList<>();
 
+        if (vehicle.getMake() != null && !vehicle.getMake().isBlank()) {
+            nameParts.add(vehicle.getMake());
+        }
+
+        if (vehicle.getModel() != null && !vehicle.getModel().isBlank()) {
+            nameParts.add(vehicle.getModel());
+        }
+
+        if (vehicle.getYear() != null) {
+            nameParts.add(vehicle.getYear().toString());
+        }
+
+        if (nameParts.isEmpty()) {
+            return "Vehicle " + vehicle.getId();
+        }
+
+        return String.join(" ", nameParts);
+    }
     private String csv(final String value) {
         if (value == null) {
             return "";
