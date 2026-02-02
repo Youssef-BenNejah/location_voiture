@@ -47,6 +47,6 @@ public class VehicleResponse {
     private List<String> documents;
     private Double ratingAverage;
     private Integer ratingCount;
-    private String createdDate;
-    private String lastModifiedDate;
+    private LocalDateTime createdDate;
+    private LocalDateTime lastModifiedDate;
 }

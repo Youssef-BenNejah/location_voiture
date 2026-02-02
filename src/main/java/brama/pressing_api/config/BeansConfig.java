@@ -74,4 +74,5 @@ public class BeansConfig {
         bean.setValidationMessageSource(messageSource);
         return bean;
     }
+
 }

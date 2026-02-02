@@ -144,12 +144,8 @@ public final class VehicleMapper {
                 .documents(vehicle.getDocuments())
                 .ratingAverage(vehicle.getRatingAverage())
                 .ratingCount(vehicle.getRatingCount())
-                .createdDate(vehicle.getCreatedDate() != null
-                        ? vehicle.getCreatedDate().toString()
-                        : null)
-                .lastModifiedDate(vehicle.getLastModifiedDate() != null
-                        ? vehicle.getLastModifiedDate().toString()
-                        : null)
+                .createdDate(vehicle.getCreatedDate())
+                .lastModifiedDate(vehicle.getLastModifiedDate())
                 .build();
     }
 }
