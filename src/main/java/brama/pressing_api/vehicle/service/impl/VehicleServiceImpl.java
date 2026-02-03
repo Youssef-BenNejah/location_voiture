@@ -17,8 +17,6 @@ import brama.pressing_api.vehicle.repo.VehicleRepository;
 import brama.pressing_api.vehicle.service.VehicleSearchCriteria;
 import brama.pressing_api.vehicle.service.VehicleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,14 +38,12 @@ public class VehicleServiceImpl implements VehicleService {
     private final UploadService uploadService;
 
     @Override
-    @CacheEvict(cacheNames = "vehicles", allEntries = true)
     public VehicleResponse create(final CreateVehicleRequest request) {
         Vehicle vehicle = VehicleMapper.toEntity(request);
         return VehicleMapper.toResponse(vehicleRepository.save(vehicle));
     }
 
     @Override
-    @CacheEvict(cacheNames = "vehicles", key = "#vehicleId")
     public VehicleResponse update(final String vehicleId, final UpdateVehicleRequest request) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new EntityNotFoundException("Vehicle not found"));
@@ -56,7 +52,6 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
-    @Cacheable(cacheNames = "vehicles", key = "#vehicleId")
     public VehicleResponse getById(final String vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new EntityNotFoundException("Vehicle not found"));
@@ -64,7 +59,6 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
-    @CacheEvict(cacheNames = "vehicles", key = "#vehicleId")
     public void delete(final String vehicleId) {
         if (!vehicleRepository.existsById(vehicleId)) {
             throw new EntityNotFoundException("Vehicle not found");
@@ -125,7 +119,6 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
-    @CacheEvict(cacheNames = "vehicles", key = "#vehicleId")
     public VehicleResponse uploadMedia(final String vehicleId,
                                        final List<MultipartFile> images,
                                        final List<MultipartFile> documents) throws IOException {

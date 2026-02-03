@@ -9,7 +9,6 @@ This document is the complete guide for this Spring Boot API: setup, architectur
 **Tech stack**
 - Java 17, Spring Boot 3.5.4
 - MongoDB (primary DB)
-- Redis (cache)
 - JWT auth (RSA keys)
 - Cloudinary (uploads)
 - Stripe (payments)
@@ -52,7 +51,7 @@ This document is the complete guide for this Spring Boot API: setup, architectur
 ## 🔧 Setup & Configuration
 
 **Required env**
-- MongoDB, Redis, Cloudinary, Mail
+- MongoDB, Cloudinary, Mail
 - Stripe (optional but enabled)
 
 See `.env.example` for all variables. Key Stripe vars:

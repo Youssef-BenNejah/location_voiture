@@ -12,8 +12,6 @@ import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,7 +25,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     private final ExcursionRepository excursionRepository;
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public ExcursionResponse create(final CreateExcursionRequest request) {
         Excursion excursion = ExcursionMapper.toEntity(request);
         ensureCapacityValid(excursion.getTotalCapacity(), excursion.getBookedSeats());
@@ -35,7 +32,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public ExcursionResponse update(final String excursionId, final UpdateExcursionRequest request) {
         Excursion excursion = excursionRepository.findById(excursionId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));
@@ -56,7 +52,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     }
 
     @Override
-    @Cacheable(cacheNames = "excursion", key = "#excursionId")
     public ExcursionResponse getById(final String excursionId) {
         Excursion excursion = excursionRepository.findById(excursionId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));
@@ -64,7 +59,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     }
 
     @Override
-    @Cacheable(cacheNames = "excursion", key = "'public::' + #excursionId")
     public ExcursionResponse getPublicById(final String excursionId) {
         Excursion excursion = excursionRepository.findByIdAndIsEnabledTrue(excursionId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));
@@ -72,7 +66,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public void delete(final String excursionId) {
         if (!excursionRepository.existsById(excursionId)) {
             throw new EntityNotFoundException("Excursion not found");
@@ -81,7 +74,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     }
 
     @Override
-    @Cacheable(cacheNames = "excursions", key = "#criteria.cacheKey()")
     public List<ExcursionResponse> listPublic(final ExcursionSearchCriteria criteria) {
         criteria.setEnabledOnly(Boolean.TRUE);
         Page<Excursion> page = excursionRepository.search(criteria, Pageable.unpaged());
@@ -97,7 +89,6 @@ public class ExcursionServiceImpl implements ExcursionService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public ExcursionResponse setEnabled(final String excursionId, final boolean enabled) {
         Excursion excursion = excursionRepository.findById(excursionId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));

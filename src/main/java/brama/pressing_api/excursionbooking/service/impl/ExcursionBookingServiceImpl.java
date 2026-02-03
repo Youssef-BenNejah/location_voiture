@@ -18,7 +18,6 @@ import brama.pressing_api.exception.ErrorCode;
 import brama.pressing_api.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -44,7 +43,6 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
     private final EmailService emailService;
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public ExcursionBookingResponse createPublic(final String excursionId,
                                                  final CreateExcursionBookingRequest request) {
         Excursion excursion = excursionRepository.findById(excursionId)
@@ -113,7 +111,6 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public ExcursionBookingResponse cancelMyBooking(final String bookingId) {
         String userId = SecurityUtils.getCurrentUserId()
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -159,7 +156,6 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"excursions", "excursion"}, allEntries = true)
     public ExcursionBookingResponse updateStatus(final String bookingId, final ExcursionBookingStatus status) {
         ExcursionBooking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion booking not found"));
