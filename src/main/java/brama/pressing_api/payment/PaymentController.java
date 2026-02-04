@@ -28,7 +28,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     /**
-     * Creates a payment for a booking.
+     * Creates a payment for a booking or an excursion booking.
      */
     @PostMapping
     public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {

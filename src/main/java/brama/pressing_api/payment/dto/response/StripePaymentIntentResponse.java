@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 public class StripePaymentIntentResponse {
     private String paymentId;
     private String bookingId;
+    private String excursionBookingId;
     private String paymentIntentId;
     private String clientSecret;
     private BigDecimal amount;

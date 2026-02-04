@@ -24,6 +24,10 @@ public class Payment extends BaseDocument {
     @Indexed
     private String bookingId;
 
+    @Field("excursion_booking_id")
+    @Indexed
+    private String excursionBookingId;
+
     @Field("user_id")
     @Indexed
     private String userId;
