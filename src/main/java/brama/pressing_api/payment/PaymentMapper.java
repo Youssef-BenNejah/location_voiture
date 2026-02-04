@@ -11,6 +11,7 @@ public final class PaymentMapper {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .bookingId(payment.getBookingId())
+                .excursionBookingId(payment.getExcursionBookingId())
                 .userId(payment.getUserId())
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())

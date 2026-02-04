@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 public class PaymentResponse {
     private String id;
     private String bookingId;
+    private String excursionBookingId;
     private String userId;
     private BigDecimal amount;
     private String currency;

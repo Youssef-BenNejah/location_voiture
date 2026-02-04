@@ -11,8 +11,6 @@ import brama.pressing_api.location.dto.response.LocationResponse;
 import brama.pressing_api.location.repo.LocationRepository;
 import brama.pressing_api.location.service.LocationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +24,6 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
 
     @Override
-    @CacheEvict(cacheNames = {"locations", "location"}, allEntries = true)
     public LocationResponse create(final CreateLocationRequest request) {
         if (locationRepository.existsByCodeIgnoreCase(request.getCode())) {
             throw new BusinessException(ErrorCode.LOCATION_CODE_EXISTS);
@@ -36,7 +33,6 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"locations", "location"}, allEntries = true)
     public LocationResponse update(final String locationId, final UpdateLocationRequest request) {
         Location location = locationRepository.findById(locationId)
                 .orElseThrow(() -> new EntityNotFoundException("Location not found"));
@@ -50,7 +46,6 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
-    @Cacheable(cacheNames = "location", key = "#locationId")
     public LocationResponse getById(final String locationId) {
         Location location = locationRepository.findById(locationId)
                 .orElseThrow(() -> new EntityNotFoundException("Location not found"));
@@ -58,7 +53,6 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"locations", "location"}, allEntries = true)
     public void delete(final String locationId) {
         if (!locationRepository.existsById(locationId)) {
             throw new EntityNotFoundException("Location not found");
@@ -67,7 +61,6 @@ public class LocationServiceImpl implements LocationService {
     }
 
     @Override
-    @Cacheable(cacheNames = "locations")
     public List<LocationResponse> listPublic() {
         return locationRepository.findAll()
                 .stream()

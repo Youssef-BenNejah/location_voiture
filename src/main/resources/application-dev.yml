@@ -2,10 +2,6 @@ spring:
    data:
      mongodb:
        uri: mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@${DB_CLUSTER_URL}/${DB_NAME}?retryWrites=true&w=majority
-     redis:
-       host: ${REDIS_HOST:localhost}
-       port: ${REDIS_PORT:6379}
-       timeout: 2000
 
 
    mail:

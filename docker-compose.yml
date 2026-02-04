@@ -7,12 +7,6 @@ services:
       - 1080-1080
       - 1025:1025
 
-  redis:
-    container_name: redis-car-joy
-    image: redis:7-alpine
-    ports:
-      - 6379:6379
-
 networks:
   pressing-net:
     driver: bridge

@@ -24,19 +24,4 @@ public class ExcursionSearchCriteria {
     private Boolean enabledOnly;
     private LocalDate availableDate;
 
-    public String cacheKey() {
-        return String.join("|",
-                safe(query),
-                safe(category),
-                durationType != null ? durationType.name() : "",
-                minPrice != null ? minPrice.toPlainString() : "",
-                maxPrice != null ? maxPrice.toPlainString() : "",
-                enabledOnly != null ? enabledOnly.toString() : "",
-                availableDate != null ? availableDate.toString() : ""
-        );
-    }
-
-    private String safe(final String value) {
-        return value == null ? "" : value.trim().toLowerCase();
-    }
 }

@@ -112,7 +112,7 @@ public class ChatServiceImpl implements ChatService {
         LocalDateTime now = LocalDateTime.now();
         Map<String, ChatMessageReceipt> receipts = new HashMap<>();
         receipts.put(senderId, ChatMessageReceipt.builder()
-                .status(ChatMessageStatus.READ)
+                .status(ChatMessageStatus.SENT)
                 .timestamp(now)
                 .build());
         receipts.put(recipientId, ChatMessageReceipt.builder()
