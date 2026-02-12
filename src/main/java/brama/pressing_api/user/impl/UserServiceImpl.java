@@ -14,6 +14,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import brama.pressing_api.user.dto.response.AdminUserResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import java.time.LocalDateTime;
 
 import static brama.pressing_api.exception.ErrorCode.*;
 
@@ -88,4 +92,53 @@ public class UserServiceImpl implements UserService {
     public void deleteAccount(String userId) {
 
     }
+
+    @Override
+    public Page<AdminUserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAllByOrderByCreatedDateDesc(pageable)
+                .map(AdminUserResponse::from);
+    }
+
+
+    @Override
+    public AdminUserResponse getUserById(String id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
+        return AdminUserResponse.from(user);
+    }
+    @Override
+    public void banUser(String id, String reason) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
+        if (user.isLocked()) {
+            throw new BusinessException(USER_ALREADY_BANNED);
+        }
+
+        user.setLocked(true);
+        user.setEnabled(false);
+        user.setBannedAt(LocalDateTime.now());
+        user.setBanReason(reason);
+
+        userRepository.save(user);
+    }
+    @Override
+    public void unbanUser(String id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
+        if (!user.isLocked()) {
+            throw new BusinessException(USER_NOT_BANNED);
+        }
+
+        user.setLocked(false);
+        user.setEnabled(true);
+        user.setBanReason(null);
+        user.setBannedAt(null);
+
+        userRepository.save(user);
+    }
+
+
 }

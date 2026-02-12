@@ -47,22 +47,34 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AuthenticationResponse login(AuthenticationRequest request) {
+
         final Authentication auth = this.authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
                         request.getPassword()
                 )
         );
+
         final User user = (User) auth.getPrincipal();
+
+        // 🔴 CHECK IF USER IS BANNED
+        if (user.isLocked()) {
+            throw new BusinessException(ErrorCode.USER_BANNED);
+        }
+
+        // 🔴 CHECK EMAIL VERIFIED
         if (!user.isEmailVerified()) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
+
         final String accessToken = this.jwtService.generateAccessToken(user);
-        final String refreshToken=this.jwtService.generateRefreshToken(user);
+        final String refreshToken = this.jwtService.generateRefreshToken(user);
+
         LocalDateTime expirationTime = this.jwtService.extractExpiration(refreshToken)
                 .toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
+
         tokenService.storeRefreshToken(user.getId(), refreshToken, expirationTime);
 
         return AuthenticationResponse.builder()
@@ -71,6 +83,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .tokenType("Bearer")
                 .build();
     }
+
 
     @Override
     @Transactional

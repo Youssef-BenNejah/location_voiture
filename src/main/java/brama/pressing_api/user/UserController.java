@@ -1,11 +1,15 @@
 package brama.pressing_api.user;
 
+import brama.pressing_api.user.dto.request.BanUserRequest;
+import brama.pressing_api.user.dto.response.AdminUserResponse;
 import brama.pressing_api.user.request.ChangePasswordRequest;
 import brama.pressing_api.user.request.ProfileUpdateRequest;
 import brama.pressing_api.user.dto.response.UserProfileResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -83,5 +87,33 @@ public class UserController {
 
     private String getUserId(final Authentication authentication) {
         return ((User) authentication.getPrincipal()).getId();
+    }
+
+
+    // GET ALL USERS (pagination)
+    @GetMapping
+    public Page<AdminUserResponse> getAllUsers(Pageable pageable) {
+        return service.getAllUsers(pageable);
+    }
+
+    // GET USER BY ID
+    @GetMapping("/{id}")
+    public AdminUserResponse getUserById(@PathVariable String id) {
+        return service.getUserById(id);
+    }
+
+    // BAN USER
+    @PatchMapping("/{id}/ban")
+    public void banUser(
+            @PathVariable String id,
+            @RequestBody BanUserRequest request
+    ) {
+        service.banUser(id, request.getReason());
+    }
+
+    // UNBAN USER
+    @PatchMapping("/{id}/unban")
+    public void unbanUser(@PathVariable String id) {
+        service.unbanUser(id);
     }
 }

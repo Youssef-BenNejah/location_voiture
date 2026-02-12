@@ -67,9 +67,10 @@ public enum ErrorCode {
     CIRCUIT_PASSENGERS_LIMIT("CIRCUIT_PASSENGERS_LIMIT", "Requested passengers exceed the allowed limit", BAD_REQUEST),
     CIRCUIT_BOOKING_STATUS_NOT_ALLOWED("CIRCUIT_BOOKING_STATUS_NOT_ALLOWED", "Circuit booking status change not allowed", BAD_REQUEST),
     CIRCUIT_DATE_INVALID("CIRCUIT_DATE_INVALID", "Selected date must be today or later", BAD_REQUEST),
-    CIRCUIT_ACCESS_DENIED("CIRCUIT_ACCESS_DENIED", "You do not have access to this circuit booking", FORBIDDEN);
-    ;
-
+    CIRCUIT_ACCESS_DENIED("CIRCUIT_ACCESS_DENIED", "You do not have access to this circuit booking", FORBIDDEN),
+    USER_ALREADY_BANNED("USER_ALREADY_BANNED","User account is already banned",HttpStatus.BAD_REQUEST),
+    USER_NOT_BANNED("USER_NOT_BANNED","User account is not banned",HttpStatus.BAD_REQUEST),
+    USER_BANNED("USER_BANNED", "Your account has been banned. Please contact support.", HttpStatus.FORBIDDEN);
     private final String code;
     private final String defaultMessage;
     private final HttpStatus status;

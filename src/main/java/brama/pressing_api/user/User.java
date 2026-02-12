@@ -75,7 +75,11 @@ public class User implements UserDetails {
     private LocalDateTime lastModifiedDate;
     @Field("role_ids")
     private List<String> roles;
+    @Field("banned_at")
+    private LocalDateTime bannedAt;
 
+    @Field("ban_reason")
+    private String banReason;
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (CollectionUtils.isEmpty(this.roles)) {
@@ -107,7 +111,6 @@ public class User implements UserDetails {
     public boolean isAccountNonExpired() {
         return true;
     }
-
     @Override
     public boolean isAccountNonLocked() {
         return !this.locked;

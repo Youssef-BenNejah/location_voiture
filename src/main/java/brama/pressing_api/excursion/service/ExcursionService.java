@@ -5,7 +5,9 @@ import brama.pressing_api.excursion.dto.request.UpdateExcursionRequest;
 import brama.pressing_api.excursion.dto.response.ExcursionResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface ExcursionService {
@@ -24,4 +26,6 @@ public interface ExcursionService {
     Page<ExcursionResponse> listAdmin(ExcursionSearchCriteria criteria, Pageable pageable);
 
     ExcursionResponse setEnabled(String excursionId, boolean enabled);
+    ExcursionResponse uploadImages(String excursionId, List<MultipartFile> images) throws IOException;
+
 }

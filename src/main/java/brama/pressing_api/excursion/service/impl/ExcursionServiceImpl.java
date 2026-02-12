@@ -11,11 +11,16 @@ import brama.pressing_api.excursion.service.ExcursionService;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.upload.dto.response.UploadResponse;
+import brama.pressing_api.upload.service.UploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExcursionServiceImpl implements ExcursionService {
     private final ExcursionRepository excursionRepository;
+    private final UploadService uploadService;
 
     @Override
     public ExcursionResponse create(final CreateExcursionRequest request) {
@@ -104,5 +110,36 @@ public class ExcursionServiceImpl implements ExcursionService {
         if (booked < 0 || booked > totalCapacity) {
             throw new BusinessException(ErrorCode.EXCURSION_CAPACITY_INVALID);
         }
+    }
+
+    @Override
+    public ExcursionResponse uploadImages(final String excursionId,
+                                          final List<MultipartFile> images) throws IOException {
+
+        if (images == null || images.isEmpty()) {
+            throw new BusinessException(ErrorCode.FILE_REQUIRED);
+        }
+
+        Excursion excursion = excursionRepository.findById(excursionId)
+                .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));
+
+        List<String> imageUrls =
+                excursion.getImages() != null ? new ArrayList<>(excursion.getImages()) : new ArrayList<>();
+
+        for (MultipartFile file : images) {
+            UploadResponse upload = uploadService.uploadImage(file);
+            String url = resolveUrl(upload);
+            if (url != null) {
+                imageUrls.add(url);
+            }
+        }
+
+        excursion.setImages(imageUrls);
+
+        return ExcursionMapper.toResponse(excursionRepository.save(excursion));
+    }
+    private String resolveUrl(UploadResponse upload) {
+        if (upload == null) return null;
+        return upload.getUrl(); // adjust if your UploadResponse differs
     }
 }
