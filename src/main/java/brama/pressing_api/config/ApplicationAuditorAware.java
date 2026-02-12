@@ -1,5 +1,6 @@
 package brama.pressing_api.config;
 
+import brama.pressing_api.chat.websocket.ChatPrincipal;
 import brama.pressing_api.user.User;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -19,7 +20,13 @@ public class ApplicationAuditorAware implements AuditorAware<String> {
             return Optional.empty();
         }
 
-        final User user = (User) authentication.getPrincipal();
-        return Optional.ofNullable(user.getId());
+        final Object principal = authentication.getPrincipal();
+        if (principal instanceof User user) {
+            return Optional.ofNullable(user.getId());
+        }
+        if (principal instanceof ChatPrincipal chatPrincipal) {
+            return Optional.ofNullable(chatPrincipal.getName());
+        }
+        return Optional.empty();
     }
 }

@@ -23,6 +23,8 @@ public enum ErrorCode {
     USER_NOT_FOUND("USER_NOT_FOUND", "User not found", NOT_FOUND),
     ACCOUNT_ALREADY_DEACTIVATED("ACCOUNT_ALREADY_DEACTIVATED", "Account has been deactivated", BAD_REQUEST),
     BAD_CREDENTIALS("BAD_CREDENTIALS", "Username and / or password is incorrect", UNAUTHORIZED),
+    ACCESS_TOKEN_MISSING("ACCESS_TOKEN_MISSING", "Access token is missing", UNAUTHORIZED),
+    ACCESS_TOKEN_INVALID("ACCESS_TOKEN_INVALID", "Access token is invalid or expired", UNAUTHORIZED),
     INTERNAL_EXCEPTION("INTERNAL_EXCEPTION",
             "An internal exception occurred, please try again or contact the admin",
             HttpStatus.INTERNAL_SERVER_ERROR),
