@@ -17,7 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+
 import java.util.List;
 import java.util.Random;
 
@@ -25,8 +25,7 @@ import java.util.Random;
 @RequiredArgsConstructor
 @Slf4j
 public class TokenService {
-    @Value("${app.frontend-url:http://localhost:4200}")
-    private String frontendUrl;
+
     @Value("${app.security.otp.length}")
     private int otpLength;
 
@@ -135,8 +134,8 @@ public class TokenService {
                     ? user.getFirstName()
                     : user.getEmail();
             if (purpose == OtpPurpose.EMAIL_VERIFICATION) {
-                String verificationUrl = UriComponentsBuilder.fromHttpUrl(frontendUrl)
-                        .path("/verify-email")
+                String verificationUrl = UriComponentsBuilder.fromHttpUrl("http://localhost:8080")
+                        .path("/api/v1/auth/verify-email")
                         .queryParam("userId", userId)
                         .queryParam("code", otpCode)
                         .build()

@@ -1,10 +1,7 @@
 package brama.pressing_api.auth.impl;
 
 import brama.pressing_api.auth.AuthenticationService;
-import brama.pressing_api.auth.request.AuthenticationRequest;
-import brama.pressing_api.auth.request.RefreshRequest;
-import brama.pressing_api.auth.request.RegistrationRequest;
-import brama.pressing_api.auth.request.ResetPasswordRequest;
+import brama.pressing_api.auth.request.*;
 import brama.pressing_api.auth.response.AuthenticationResponse;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
@@ -117,6 +114,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .build();
 
     }
+    @Override
+    @Transactional
+    public void verifyEmailByUserId(String userId, String code) {
+        log.info("Attempting to verify email for userId: {} with code: {}", userId, code);
+
+        // Verify OTP code (this already sets emailVerified = true internally)
+        this.tokenService.verifyOtpToken(userId, code, OtpPurpose.EMAIL_VERIFICATION);
+
+        log.info("✅ Email verified successfully for userId: {}", userId);
+    }
 
     @Override
     public void resetPassword(ResetPasswordRequest request) {
@@ -129,6 +136,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setPassword(encoded);
         this.userRepository.save(user);
     }
+
+
+
     private void checkPassword(String password, String confirmPassword) {
         if(password == null || !password.equals(confirmPassword))
         {

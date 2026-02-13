@@ -1,19 +1,15 @@
 package brama.pressing_api.auth;
 
-import brama.pressing_api.auth.request.AuthenticationRequest;
-import brama.pressing_api.auth.request.RefreshRequest;
-import brama.pressing_api.auth.request.RegistrationRequest;
-import brama.pressing_api.auth.request.ResetPasswordRequest;
+import brama.pressing_api.auth.request.*;
 import brama.pressing_api.auth.response.AuthenticationResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 /**
  * Authentication endpoints for login, registration, and token refresh.
@@ -70,4 +66,22 @@ public class AuthenticationController {
         this.service.resetPassword(request);
         return ResponseEntity.ok().build();
     }
+
+
+    /**
+     * Verifies user email via URL link (GET request from email).
+     * Example: /verify-email?userId=xxx&code=123456
+     */
+    @GetMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmailViaLink(
+            @RequestParam("userId") String userId,
+            @RequestParam("code") String code) {
+        this.service.verifyEmailByUserId(userId, code);
+
+        // Redirect to frontend success page
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create("http://localhost:4200/login?verified=true"))
+                .build();
+    }
+
 }
