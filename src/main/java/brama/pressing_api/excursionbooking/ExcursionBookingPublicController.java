@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Public endpoint to create excursion bookings from the excursion details page.
  */
 @RestController
-@RequestMapping("/api/v1/public/excursions/{excursionId}/bookings")
+@RequestMapping("/api/v1/client/excursions")
 @RequiredArgsConstructor
 @Tag(name = "Excursion Bookings - Public", description = "Public excursion booking")
 public class ExcursionBookingPublicController {
@@ -27,9 +28,13 @@ public class ExcursionBookingPublicController {
     /**
      * Creates a booking for an excursion and reserves capacity.
      */
-    @PostMapping
-    public ResponseEntity<ExcursionBookingResponse> createBooking(@PathVariable String excursionId,
-                                                                  @Valid @RequestBody CreateExcursionBookingRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.createPublic(excursionId, request));
+    @PostMapping("/{excursionId}/bookings")
+    public ResponseEntity<ExcursionBookingResponse> createBooking(
+            @PathVariable String excursionId,
+            @Valid @RequestBody CreateExcursionBookingRequest request,
+            Authentication authentication) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(bookingService.createPublic(excursionId, request, authentication));
     }
 }

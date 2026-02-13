@@ -6,10 +6,8 @@ import brama.pressing_api.booking.domain.model.BookingPricing;
 import brama.pressing_api.booking.domain.model.DriverDetails;
 import brama.pressing_api.booking.dto.request.BookingExtraRequest;
 import brama.pressing_api.booking.dto.request.DriverDetailsRequest;
-import brama.pressing_api.booking.dto.response.BookingExtraResponse;
-import brama.pressing_api.booking.dto.response.BookingPricingResponse;
-import brama.pressing_api.booking.dto.response.BookingResponse;
-import brama.pressing_api.booking.dto.response.DriverDetailsResponse;
+import brama.pressing_api.booking.dto.response.*;
+import brama.pressing_api.vehicle.domain.model.Vehicle;
 
 import java.util.Collections;
 import java.util.List;
@@ -117,5 +115,62 @@ public final class BookingMapper {
                 .phone(driver.getPhone())
                 .email(driver.getEmail())
                 .build();
+    }
+    /**
+     * Convert to BookingClientResponse (for client endpoints)
+     * This version includes vehicle images and location names
+     */
+    public static BookingClientResponse toClientResponse(final Booking booking) {
+        return BookingClientResponse.builder()
+                .id(booking.getId())
+                .userId(booking.getUserId())
+                .customerName(booking.getCustomerName())
+                .customerEmail(booking.getCustomerEmail())
+                .customerPhone(booking.getCustomerPhone())
+                .vehicleId(booking.getVehicleId())
+                .vehicleName(booking.getVehicleName())
+                .vehicleImage(null)  // Will be enriched
+                .pickupLocationId(booking.getPickupLocationId())
+                .pickupLocationName(null)  // Will be enriched
+                .dropoffLocationId(booking.getDropoffLocationId())
+                .dropoffLocationName(null)  // Will be enriched
+                .startDate(booking.getStartDate())
+                .endDate(booking.getEndDate())
+                .status(booking.getStatus())
+                .paymentStatus(booking.getPaymentStatus())
+                .createdBy(booking.getBookingCreatedBy())
+                .paidAmount(booking.getPaidAmount())
+                .paymentHistory(booking.getPaymentHistory())
+                .pricing(toPricingResponse(booking.getPricing()))
+                .extras(toExtraResponses(booking.getExtras()))
+                .driver(toDriverDetailsResponse(booking.getDriver()))
+                .notes(booking.getNotes())
+                .promoCode(booking.getPromoCode())
+                .createdDate(booking.getCreatedDate())
+                .lastModifiedDate(booking.getLastModifiedDate())
+                .build();
+    }
+
+    /**
+     * Enrich BookingClientResponse with vehicle image and location names
+     */
+    public static BookingClientResponse enrichClientResponse(BookingClientResponse response,
+                                                             Vehicle vehicle,
+                                                             String pickupLocationName,
+                                                             String dropoffLocationName) {
+        if (response == null) {
+            return null;
+        }
+
+        // Set vehicle image if available
+        if (vehicle != null && vehicle.getImages() != null && !vehicle.getImages().isEmpty()) {
+            response.setVehicleImage(vehicle.getImages().get(0));
+        }
+
+        // Set location names
+        response.setPickupLocationName(pickupLocationName);
+        response.setDropoffLocationName(dropoffLocationName);
+
+        return response;
     }
 }

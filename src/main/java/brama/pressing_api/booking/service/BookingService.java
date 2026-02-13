@@ -5,6 +5,7 @@ import brama.pressing_api.booking.dto.request.AdminCreateBookingRequest;
 import brama.pressing_api.booking.dto.request.CreateBookingRequest;
 import brama.pressing_api.booking.dto.request.RecordBookingPaymentRequest;
 import brama.pressing_api.booking.dto.response.BookingAdminStatsResponse;
+import brama.pressing_api.booking.dto.response.BookingClientResponse;
 import brama.pressing_api.booking.dto.response.BookingResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,11 +15,11 @@ import java.util.List;
 public interface BookingService {
     BookingResponse create(CreateBookingRequest request);
 
-    List<BookingResponse> listMyBookings();
+    List<BookingClientResponse> listMyBookings();
 
     BookingResponse getMyBooking(String bookingId);
 
-    BookingResponse cancelMyBooking(String bookingId);
+    BookingClientResponse cancelMyBooking(String bookingId);
 
     Page<BookingResponse> listAdmin(Pageable pageable);
 

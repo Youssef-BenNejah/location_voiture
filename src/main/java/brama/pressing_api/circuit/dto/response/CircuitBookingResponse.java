@@ -35,4 +35,5 @@ public class CircuitBookingResponse {
     private LocalDateTime bookedAt;
     private LocalDateTime createdDate;
     private LocalDateTime lastModifiedDate;
+
 }
