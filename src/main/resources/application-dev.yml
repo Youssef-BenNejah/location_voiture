@@ -21,4 +21,4 @@ spring:
 
 
 app:
-  frontend-url: http://localhost:4200
+  frontend-url: https://driveclass.netlify.app
