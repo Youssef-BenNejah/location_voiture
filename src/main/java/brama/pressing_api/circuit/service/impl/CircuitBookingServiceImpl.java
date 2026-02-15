@@ -15,10 +15,13 @@ import brama.pressing_api.circuit.service.CircuitBookingSearchCriteria;
 import brama.pressing_api.circuit.service.CircuitBookingService;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.user.User;
+import brama.pressing_api.user.UserRepository;
 import brama.pressing_api.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,20 +38,27 @@ import java.util.Optional;
 public class CircuitBookingServiceImpl implements CircuitBookingService {
     private final CircuitRepository circuitRepository;
     private final CircuitBookingRepository bookingRepository;
+    private final UserRepository userRepository;
 
     @Override
     public CircuitBookingResponse createPublic(final String circuitId,
                                                final CreateCircuitBookingRequest request,
-                                               final String userId) {
+                                               final Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        User userFound = userRepository.findById(user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CIRCUIT_NOT_FOUND));
         Circuit circuit = circuitRepository.findById(circuitId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CIRCUIT_NOT_FOUND));
+
         if (circuit.getStatus() != CircuitStatus.ACTIVE) {
             throw new BusinessException(ErrorCode.CIRCUIT_INACTIVE);
         }
+
         if (request.getNumberOfPassengers() != null && circuit.getMaxPassengers() != null
                 && request.getNumberOfPassengers() > circuit.getMaxPassengers()) {
             throw new BusinessException(ErrorCode.CIRCUIT_PASSENGERS_LIMIT);
         }
+
         if (request.getSelectedDate() != null && request.getSelectedDate().isBefore(LocalDate.now())) {
             throw new BusinessException(ErrorCode.CIRCUIT_DATE_INVALID);
         }
@@ -56,9 +66,10 @@ public class CircuitBookingServiceImpl implements CircuitBookingService {
         BigDecimal price = circuit.getPrice() != null ? circuit.getPrice() : BigDecimal.ZERO;
         BigDecimal total = price.multiply(BigDecimal.valueOf(request.getNumberOfPassengers()));
 
+        // 🔥 Use userId if authenticated, otherwise null (for guest bookings)
         CircuitBooking booking = CircuitBooking.builder()
                 .circuitId(circuit.getId())
-                .userId(userId)
+                .userId(userFound.getId()) // This will be the authenticated user ID
                 .circuitTitle(circuit.getTitle())
                 .customerName(request.getCustomerName())
                 .customerEmail(request.getCustomerEmail())
@@ -74,7 +85,14 @@ public class CircuitBookingServiceImpl implements CircuitBookingService {
                 .bookedAt(LocalDateTime.now())
                 .build();
 
-        return CircuitMapper.toBookingResponse(bookingRepository.save(booking));
+        CircuitBooking savedBooking = bookingRepository.save(booking);
+
+        // 🔥 Debug log
+        System.out.println("✅ Booking created with ID: " + savedBooking.getId());
+        System.out.println("👤 User ID: " + savedBooking.getUserId());
+        System.out.println("📧 Email: " + savedBooking.getCustomerEmail());
+
+        return CircuitMapper.toBookingResponse(savedBooking);
     }
 
     @Override

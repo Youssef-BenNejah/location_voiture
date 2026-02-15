@@ -15,11 +15,14 @@ import brama.pressing_api.excursionbooking.service.ExcursionBookingService;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.user.User;
+import brama.pressing_api.user.UserRepository;
 import brama.pressing_api.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -41,12 +44,16 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
     private final ExcursionBookingRepository bookingRepository;
     private final ExcursionRepository excursionRepository;
     private final EmailService emailService;
+    private final UserRepository userRepository;
 
     @Override
     public ExcursionBookingResponse createPublic(final String excursionId,
-                                                 final CreateExcursionBookingRequest request) {
+                                                 final CreateExcursionBookingRequest request, final Authentication authentication) {
         Excursion excursion = excursionRepository.findById(excursionId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));
+        User user = (User) authentication.getPrincipal();
+        User userFound = userRepository.findById(user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (!Boolean.TRUE.equals(excursion.getIsEnabled())) {
             throw new BusinessException(ErrorCode.EXCURSION_DISABLED);
         }
@@ -66,7 +73,7 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
         ExcursionBooking booking = ExcursionBooking.builder()
                 .excursionId(excursion.getId())
                 .excursionTitle(excursion.getTitle())
-                .userId(SecurityUtils.getCurrentUserId().orElse(null))
+                .userId(userFound.getId())
                 .customerName(request.getCustomerName())
                 .customerEmail(request.getCustomerEmail())
                 .customerPhone(request.getCustomerPhone())

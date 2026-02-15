@@ -9,8 +9,12 @@ public final class ExcursionBookingMapper {
     private ExcursionBookingMapper() {
     }
 
-    public static ExcursionBookingResponse toResponse(final ExcursionBooking booking) {
-        return ExcursionBookingResponse.builder()
+    public static ExcursionBookingResponse toResponse(final ExcursionBooking booking, final Excursion excursion) {
+        if (booking == null) {
+            return null;
+        }
+
+        ExcursionBookingResponse.ExcursionBookingResponseBuilder builder = ExcursionBookingResponse.builder()
                 .id(booking.getId())
                 .excursionId(booking.getExcursionId())
                 .excursionTitle(booking.getExcursionTitle())
@@ -23,8 +27,19 @@ public final class ExcursionBookingMapper {
                 .status(booking.getStatus())
                 .bookedAt(booking.getBookedAt())
                 .createdDate(booking.getCreatedDate())
-                .lastModifiedDate(booking.getLastModifiedDate())
-                .build();
+                .lastModifiedDate(booking.getLastModifiedDate());
+
+        // Add excursion images if excursion is provided
+        if (excursion != null) {
+            builder.excursionImages(excursion.getImages());
+        }
+
+        return builder.build();
+    }
+
+    // Overload for backward compatibility
+    public static ExcursionBookingResponse toResponse(final ExcursionBooking booking) {
+        return toResponse(booking, null);
     }
 
     public static ExcursionBookingTicketResponse toTicketResponse(final ExcursionBooking booking, final Excursion excursion) {

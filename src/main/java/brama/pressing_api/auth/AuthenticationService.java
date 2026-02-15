@@ -1,10 +1,8 @@
 package brama.pressing_api.auth;
 
-import brama.pressing_api.auth.request.AuthenticationRequest;
-import brama.pressing_api.auth.request.RefreshRequest;
-import brama.pressing_api.auth.request.RegistrationRequest;
-import brama.pressing_api.auth.request.ResetPasswordRequest;
+import brama.pressing_api.auth.request.*;
 import brama.pressing_api.auth.response.AuthenticationResponse;
+import jakarta.validation.Valid;
 
 public interface AuthenticationService {
     AuthenticationResponse login(AuthenticationRequest request);
@@ -14,4 +12,8 @@ public interface AuthenticationService {
     AuthenticationResponse refreshToken(RefreshRequest req);
 
     void resetPassword(ResetPasswordRequest request);
+
+
+
+    void verifyEmailByUserId(String userId, String code);
 }

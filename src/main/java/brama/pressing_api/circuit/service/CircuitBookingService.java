@@ -6,9 +6,10 @@ import brama.pressing_api.circuit.dto.response.CircuitBookingAdminStatsResponse;
 import brama.pressing_api.circuit.dto.response.CircuitBookingResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 
 public interface CircuitBookingService {
-    CircuitBookingResponse createPublic(String circuitId, CreateCircuitBookingRequest request, String userId);
+    CircuitBookingResponse createPublic(String circuitId, CreateCircuitBookingRequest request,  Authentication authentication);
 
     Page<CircuitBookingResponse> listAdmin(CircuitBookingSearchCriteria criteria, Pageable pageable);
 

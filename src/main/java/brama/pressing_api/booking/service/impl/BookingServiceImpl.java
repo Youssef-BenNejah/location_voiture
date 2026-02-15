@@ -11,6 +11,7 @@ import brama.pressing_api.booking.dto.request.AdminCreateBookingRequest;
 import brama.pressing_api.booking.dto.request.CreateBookingRequest;
 import brama.pressing_api.booking.dto.request.RecordBookingPaymentRequest;
 import brama.pressing_api.booking.dto.response.BookingAdminStatsResponse;
+import brama.pressing_api.booking.dto.response.BookingClientResponse;
 import brama.pressing_api.booking.dto.response.BookingResponse;
 import brama.pressing_api.booking.repo.BookingRepository;
 import brama.pressing_api.booking.service.BookingService;
@@ -20,6 +21,8 @@ import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
 import brama.pressing_api.promotion.service.PromotionService;
+import brama.pressing_api.seed.location_seed.domain.LocationSeed;
+import brama.pressing_api.seed.location_seed.repository.LocationSeedRepository;
 import brama.pressing_api.utils.SecurityUtils;
 import brama.pressing_api.vehicle.domain.model.Vehicle;
 import brama.pressing_api.vehicle.domain.model.VehicleStatus;
@@ -55,7 +58,7 @@ public class BookingServiceImpl implements BookingService {
     private final PricingProperties pricingProperties;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
-
+    private final LocationSeedRepository locationRepository;
     @Override
     public BookingResponse create(final CreateBookingRequest request) {
         String userId = SecurityUtils.getCurrentUserId()
@@ -102,13 +105,74 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponse> listMyBookings() {
+    public List<BookingClientResponse> listMyBookings() {
         String userId = SecurityUtils.getCurrentUserId()
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        return bookingRepository.findByUserId(userId)
-                .stream()
-                .map(BookingMapper::toResponse)
+
+        List<Booking> bookings = bookingRepository.findByUserId(userId);
+
+        // Enrich each booking with vehicle images and location names
+        return bookings.stream()
+                .map(this::enrichClientBooking)
                 .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Enrich a single booking with vehicle image and location names
+     * Used for client endpoints only
+     */
+    private BookingClientResponse enrichClientBooking(Booking booking) {
+        // Convert to client response
+        BookingClientResponse response = BookingMapper.toClientResponse(booking);
+
+        // Fetch vehicle for image
+        Vehicle vehicle = vehicleRepository.findById(booking.getVehicleId())
+                .orElse(null);
+
+        // Fetch location names
+        String pickupLocationName = getLocationName(booking.getPickupLocationId());
+        String dropoffLocationName = getLocationName(booking.getDropoffLocationId());
+
+        // Enrich the response
+        return BookingMapper.enrichClientResponse(
+                response,
+                vehicle,
+                pickupLocationName,
+                dropoffLocationName
+        );
+    }
+
+    /**
+     * Get location name by ID
+     */
+    private String getLocationName(String locationId) {
+        if (locationId == null || locationId.isBlank()) {
+            return null;
+        }
+
+        return locationRepository.findById(locationId)
+                .map(this::formatLocationName)
+                .orElse("Location " + locationId);
+    }
+
+    /**
+     * Format location name as "City, State" or fallback
+     */
+    private String formatLocationName(LocationSeed location) {
+        if (location.getCity() != null && location.getState() != null) {
+            return location.getCity() + ", " + location.getState();
+        }
+        if (location.getName() != null && location.getCity() != null) {
+            return location.getName() + ", " + location.getCity();
+        }
+        if (location.getName() != null) {
+            return location.getName();
+        }
+        if (location.getCity() != null) {
+            return location.getCity();
+        }
+        return "Location " + location.getId();
     }
 
     @Override
@@ -121,16 +185,22 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public BookingResponse cancelMyBooking(final String bookingId) {
+    public BookingClientResponse cancelMyBooking(final String bookingId) {
         String userId = SecurityUtils.getCurrentUserId()
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
         Booking booking = bookingRepository.findByIdAndUserId(bookingId, userId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        if (booking.getStatus() == BookingStatus.CANCELED || booking.getStatus() == BookingStatus.COMPLETED) {
+
+        if (booking.getStatus() == BookingStatus.CANCELED ||
+                booking.getStatus() == BookingStatus.COMPLETED) {
             throw new BusinessException(ErrorCode.BOOKING_STATUS_NOT_ALLOWED);
         }
+
         booking.setStatus(BookingStatus.CANCELED);
-        return BookingMapper.toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        return enrichClientBooking(saved);
     }
 
     @Override

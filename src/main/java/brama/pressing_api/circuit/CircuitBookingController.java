@@ -27,17 +27,43 @@ public class CircuitBookingController {
     @GetMapping
     public Page<CircuitBookingResponse> listMyBookings(Pageable pageable,
                                                        @RequestParam(required = false) CircuitBookingStatus status) {
+        System.out.println("🚀 API listMyBookings called");
+
         String userId = SecurityUtils.getCurrentUserId()
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        System.out.println("👤 Current User ID: " + userId);
+
         Page<CircuitBookingResponse> page = bookingService.listMyBookings(userId, pageable);
+
+        // 🔥 Print all bookings
+        System.out.println("📋 All Bookings:");
+        page.getContent().forEach(booking ->
+                System.out.println("➡️ Booking: " + booking)
+        );
+
         if (status == null) {
+            System.out.println("✅ No status filter applied");
             return page;
         }
+
+        System.out.println("🔍 Filtering bookings by status: " + status);
+
         var filtered = page.getContent().stream()
                 .filter(booking -> booking.getStatus() == status)
                 .toList();
+
+        // 🔥 Print filtered bookings
+        System.out.println("🎯 Filtered Bookings:");
+        filtered.forEach(booking ->
+                System.out.println("✅ Booking: " + booking)
+        );
+
+        System.out.println("📦 Total Filtered Bookings: " + filtered.size());
+
         return new org.springframework.data.domain.PageImpl<>(filtered, pageable, filtered.size());
     }
+
 
     @GetMapping("/{id}")
     public CircuitBookingResponse getMyBooking(@PathVariable String id) {

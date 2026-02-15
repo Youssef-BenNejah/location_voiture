@@ -1,6 +1,7 @@
 package brama.pressing_api.booking;
 
 import brama.pressing_api.booking.dto.request.CreateBookingRequest;
+import brama.pressing_api.booking.dto.response.BookingClientResponse;
 import brama.pressing_api.booking.dto.response.BookingResponse;
 import brama.pressing_api.booking.service.BookingService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +40,7 @@ public class BookingController {
      * Lists the authenticated user's bookings.
      */
     @GetMapping
-    public List<BookingResponse> listMyBookings() {
+    public List<BookingClientResponse> listMyBookings() {
         return bookingService.listMyBookings();
     }
 
@@ -55,7 +56,7 @@ public class BookingController {
      * Cancels a booking owned by the authenticated user.
      */
     @PostMapping("/{id}/cancel")
-    public BookingResponse cancelBooking(@PathVariable String id) {
+    public BookingClientResponse cancelBooking(@PathVariable String id) {
         return bookingService.cancelMyBooking(id);
     }
 }

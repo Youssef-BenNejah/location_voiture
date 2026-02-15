@@ -24,10 +24,10 @@ public class AdminCreateBookingRequest {
     @NotBlank
     private String vehicleId;
 
-    @NotBlank
+
     private String pickupLocationId;
 
-    @NotBlank
+
     private String dropoffLocationId;
 
     @NotNull
