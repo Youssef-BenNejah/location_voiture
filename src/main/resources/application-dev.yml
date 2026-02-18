@@ -22,3 +22,5 @@ spring:
 
 app:
   frontend-url: https://driveclass.netlify.app
+firebase:
+  config-path: classpath:firebase-service-account.json
