@@ -22,3 +22,6 @@ spring:
 
 app:
   frontend-url: http://localhost:4200
+
+firebase:
+  config-path: classpath:firebase-service-account.json
