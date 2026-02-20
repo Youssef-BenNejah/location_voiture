@@ -4,16 +4,23 @@ import brama.pressing_api.firebase.dto.request.PushNotificationRequest;
 import brama.pressing_api.notification.domain.NotificationChannel;
 import brama.pressing_api.notification.domain.NotificationImportance;
 import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.dto.NotificationResponse;
 import brama.pressing_api.notification.dto.SocketNotificationPayload;
+import brama.pressing_api.notification.domain.model.Notification;
+import brama.pressing_api.notification.repo.NotificationRepository;
 import brama.pressing_api.notification.service.NotificationService;
+import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.user.User;
 import brama.pressing_api.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +38,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final SimpMessagingTemplate messagingTemplate;
     private final brama.pressing_api.firebase.service.PushNotificationService pushNotificationService;
     private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public void notifyUser(final String userId, final NotificationRequest request) {
@@ -53,6 +61,8 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
+        persistNotifications(recipients, request);
+
         NotificationChannel channel = resolveChannel(request);
         if (channel == NotificationChannel.SOCKET || channel == NotificationChannel.BOTH) {
             sendSocketNotifications(recipients, request);
@@ -72,6 +82,44 @@ public class NotificationServiceImpl implements NotificationService {
         prefixedAdmins.stream().map(User::getId).forEach(adminIds::add);
 
         notifyUsers(adminIds, request);
+    }
+
+    @Override
+    public Page<NotificationResponse> listMyNotifications(final String userId, final Pageable pageable) {
+        return notificationRepository.findByUserIdOrderByCreatedDateDesc(userId, pageable)
+                .map(this::toResponse);
+    }
+
+    @Override
+    public long countUnread(final String userId) {
+        return notificationRepository.countByUserIdAndReadFalse(userId);
+    }
+
+    @Override
+    public NotificationResponse markAsRead(final String userId, final String notificationId) {
+        Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Notification not found"));
+        if (!notification.isRead()) {
+            notification.setRead(true);
+            notification.setReadAt(LocalDateTime.now());
+            notification = notificationRepository.save(notification);
+        }
+        return toResponse(notification);
+    }
+
+    @Override
+    public int markAllAsRead(final String userId) {
+        List<Notification> unread = notificationRepository.findByUserIdAndReadFalse(userId);
+        if (unread.isEmpty()) {
+            return 0;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        for (Notification notification : unread) {
+            notification.setRead(true);
+            notification.setReadAt(now);
+        }
+        notificationRepository.saveAll(unread);
+        return unread.size();
     }
 
     private void sendSocketNotifications(final Set<String> recipients, final NotificationRequest request) {
@@ -126,8 +174,39 @@ public class NotificationServiceImpl implements NotificationService {
         return request.getImportance() != null ? request.getImportance() : NotificationImportance.NORMAL;
     }
 
+    private void persistNotifications(final Set<String> recipients, final NotificationRequest request) {
+        NotificationImportance importance = resolveImportance(request);
+        Map<String, String> data = request.getData() != null ? request.getData() : Map.of();
+        List<Notification> notifications = new ArrayList<>();
+        for (String userId : recipients) {
+            notifications.add(Notification.builder()
+                    .userId(userId)
+                    .type(request.getType())
+                    .title(request.getTitle())
+                    .body(request.getBody())
+                    .importance(importance)
+                    .data(data)
+                    .read(false)
+                    .build());
+        }
+        notificationRepository.saveAll(notifications);
+    }
+
+    private NotificationResponse toResponse(final Notification notification) {
+        return NotificationResponse.builder()
+                .id(notification.getId())
+                .type(notification.getType())
+                .title(notification.getTitle())
+                .body(notification.getBody())
+                .importance(notification.getImportance())
+                .data(notification.getData())
+                .read(notification.isRead())
+                .readAt(notification.getReadAt())
+                .createdDate(notification.getCreatedDate())
+                .build();
+    }
+
     private String userTopic(final String userId) {
         return USER_TOPIC_PREFIX + userId;
     }
 }
-
