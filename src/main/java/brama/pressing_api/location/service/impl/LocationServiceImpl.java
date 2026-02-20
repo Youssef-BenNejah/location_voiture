@@ -10,6 +10,9 @@ import brama.pressing_api.location.dto.request.UpdateLocationRequest;
 import brama.pressing_api.location.dto.response.LocationResponse;
 import brama.pressing_api.location.repo.LocationRepository;
 import brama.pressing_api.location.service.LocationService;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
+    private final NotificationService notificationService;
 
     @Override
     public LocationResponse create(final CreateLocationRequest request) {
@@ -29,7 +33,15 @@ public class LocationServiceImpl implements LocationService {
             throw new BusinessException(ErrorCode.LOCATION_CODE_EXISTS);
         }
         Location location = LocationMapper.toEntity(request);
-        return LocationMapper.toResponse(locationRepository.save(location));
+        Location saved = locationRepository.save(location);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("LOCATION_CREATED")
+                .title("Location created")
+                .body("Location " + saved.getCode() + " has been created")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("locationId", saved.getId(), "code", saved.getCode()))
+                .build());
+        return LocationMapper.toResponse(saved);
     }
 
     @Override
@@ -42,7 +54,15 @@ public class LocationServiceImpl implements LocationService {
             }
         }
         LocationMapper.applyUpdates(location, request);
-        return LocationMapper.toResponse(locationRepository.save(location));
+        Location saved = locationRepository.save(location);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("LOCATION_UPDATED")
+                .title("Location updated")
+                .body("Location " + saved.getCode() + " has been updated")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("locationId", saved.getId(), "code", saved.getCode()))
+                .build());
+        return LocationMapper.toResponse(saved);
     }
 
     @Override
@@ -54,10 +74,16 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     public void delete(final String locationId) {
-        if (!locationRepository.existsById(locationId)) {
-            throw new EntityNotFoundException("Location not found");
-        }
+        Location existing = locationRepository.findById(locationId)
+                .orElseThrow(() -> new EntityNotFoundException("Location not found"));
         locationRepository.deleteById(locationId);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("LOCATION_DELETED")
+                .title("Location deleted")
+                .body("Location " + existing.getCode() + " has been deleted")
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("locationId", existing.getId(), "code", existing.getCode()))
+                .build());
     }
 
     @Override

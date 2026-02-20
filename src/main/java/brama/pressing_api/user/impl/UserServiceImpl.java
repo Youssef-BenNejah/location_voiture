@@ -6,6 +6,9 @@ import brama.pressing_api.user.User;
 import brama.pressing_api.user.UserMapper;
 import brama.pressing_api.user.UserRepository;
 import brama.pressing_api.user.UserService;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.user.request.ChangePasswordRequest;
 import brama.pressing_api.user.request.ProfileUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final NotificationService notificationService;
     @Override
     public UserDetails loadUserByUsername(final String userEmail) throws UsernameNotFoundException {
         return this.userRepository.findByEmailIgnoreCase(userEmail)
@@ -40,6 +44,13 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USERNAME_NOT_FOUND,userId));
         this.userMapper.mergeUserInfo(savedUser, request);
         this.userRepository.save(savedUser);
+        notificationService.notifyUser(userId, NotificationRequest.builder()
+                .type("PROFILE_UPDATED")
+                .title("Profile updated")
+                .body("Your profile information has been updated")
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("userId", userId))
+                .build());
 
     }
 
@@ -61,6 +72,13 @@ public class UserServiceImpl implements UserService {
         final String encoded = this.passwordEncoder.encode(request.getNewPassword());
         savedUser.setPassword(encoded);
         this.userRepository.save(savedUser);
+        notificationService.notifyUser(userId, NotificationRequest.builder()
+                .type("PASSWORD_CHANGED")
+                .title("Password changed")
+                .body("Your password was changed successfully")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("userId", userId))
+                .build());
 
     }
 
@@ -73,6 +91,13 @@ public class UserServiceImpl implements UserService {
         }
         user.setEnabled(false);
         this.userRepository.save(user);
+        notificationService.notifyUser(userId, NotificationRequest.builder()
+                .type("ACCOUNT_DEACTIVATED")
+                .title("Account deactivated")
+                .body("Your account has been deactivated")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("userId", userId))
+                .build());
 
     }
 
@@ -85,6 +110,13 @@ public class UserServiceImpl implements UserService {
         }
         user.setEnabled(true);
         this.userRepository.save(user);
+        notificationService.notifyUser(userId, NotificationRequest.builder()
+                .type("ACCOUNT_REACTIVATED")
+                .title("Account reactivated")
+                .body("Your account has been reactivated")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("userId", userId))
+                .build());
 
     }
 
@@ -122,6 +154,13 @@ public class UserServiceImpl implements UserService {
         user.setBanReason(reason);
 
         userRepository.save(user);
+        notificationService.notifyUser(user.getId(), NotificationRequest.builder()
+                .type("ACCOUNT_BANNED")
+                .title("Account banned")
+                .body("Your account has been banned. Reason: " + (reason == null ? "Not specified" : reason))
+                .importance(NotificationImportance.CRITICAL)
+                .data(java.util.Map.of("userId", user.getId()))
+                .build());
     }
     @Override
     public void unbanUser(String id) {
@@ -138,6 +177,13 @@ public class UserServiceImpl implements UserService {
         user.setBannedAt(null);
 
         userRepository.save(user);
+        notificationService.notifyUser(user.getId(), NotificationRequest.builder()
+                .type("ACCOUNT_UNBANNED")
+                .title("Account unbanned")
+                .body("Your account access has been restored")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("userId", user.getId()))
+                .build());
     }
 
 

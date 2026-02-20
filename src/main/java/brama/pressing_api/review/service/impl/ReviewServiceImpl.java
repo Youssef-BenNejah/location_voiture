@@ -10,6 +10,9 @@ import brama.pressing_api.review.dto.request.CreateReviewRequest;
 import brama.pressing_api.review.dto.response.ReviewResponse;
 import brama.pressing_api.review.repo.ReviewRepository;
 import brama.pressing_api.review.service.ReviewService;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
+    private final NotificationService notificationService;
 
     @Override
     public ReviewResponse create(final CreateReviewRequest request) {
@@ -35,7 +39,15 @@ public class ReviewServiceImpl implements ReviewService {
                 .comment(request.getComment())
                 .status(ReviewStatus.PENDING)
                 .build();
-        return ReviewMapper.toResponse(reviewRepository.save(review));
+        Review saved = reviewRepository.save(review);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("REVIEW_CREATED")
+                .title("New review submitted")
+                .body("A client submitted a review for vehicle " + saved.getVehicleId())
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("reviewId", saved.getId(), "vehicleId", saved.getVehicleId()))
+                .build());
+        return ReviewMapper.toResponse(saved);
     }
 
     @Override
@@ -56,6 +68,14 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new EntityNotFoundException("Review not found"));
         review.setStatus(status);
-        return ReviewMapper.toResponse(reviewRepository.save(review));
+        Review saved = reviewRepository.save(review);
+        notificationService.notifyUser(saved.getUserId(), NotificationRequest.builder()
+                .type("REVIEW_STATUS_UPDATED")
+                .title("Review status updated")
+                .body("Your review is now " + saved.getStatus())
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("reviewId", saved.getId(), "status", String.valueOf(saved.getStatus())))
+                .build());
+        return ReviewMapper.toResponse(saved);
     }
 }

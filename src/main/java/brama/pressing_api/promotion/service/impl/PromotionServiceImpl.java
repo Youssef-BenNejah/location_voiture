@@ -12,6 +12,9 @@ import brama.pressing_api.promotion.dto.response.PromotionResponse;
 import brama.pressing_api.promotion.dto.response.PromotionValidationResponse;
 import brama.pressing_api.promotion.repo.PromotionRepository;
 import brama.pressing_api.promotion.service.PromotionService;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +28,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class PromotionServiceImpl implements PromotionService {
     private final PromotionRepository promotionRepository;
+    private final NotificationService notificationService;
 
     @Override
     public PromotionResponse create(final CreatePromotionRequest request) {
@@ -32,7 +36,15 @@ public class PromotionServiceImpl implements PromotionService {
             throw new BusinessException(ErrorCode.PROMO_CODE_EXISTS);
         }
         Promotion promotion = PromotionMapper.toEntity(request);
-        return PromotionMapper.toResponse(promotionRepository.save(promotion));
+        Promotion saved = promotionRepository.save(promotion);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("PROMOTION_CREATED")
+                .title("Promotion created")
+                .body("Promotion " + saved.getCode() + " has been created")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("promotionId", saved.getId(), "code", saved.getCode()))
+                .build());
+        return PromotionMapper.toResponse(saved);
     }
 
     @Override
@@ -45,7 +57,15 @@ public class PromotionServiceImpl implements PromotionService {
             }
         }
         PromotionMapper.applyUpdates(promotion, request);
-        return PromotionMapper.toResponse(promotionRepository.save(promotion));
+        Promotion saved = promotionRepository.save(promotion);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("PROMOTION_UPDATED")
+                .title("Promotion updated")
+                .body("Promotion " + saved.getCode() + " has been updated")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("promotionId", saved.getId(), "code", saved.getCode()))
+                .build());
+        return PromotionMapper.toResponse(saved);
     }
 
     @Override
@@ -57,10 +77,16 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public void delete(final String promotionId) {
-        if (!promotionRepository.existsById(promotionId)) {
-            throw new EntityNotFoundException("Promotion not found");
-        }
+        Promotion existing = promotionRepository.findById(promotionId)
+                .orElseThrow(() -> new EntityNotFoundException("Promotion not found"));
         promotionRepository.deleteById(promotionId);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("PROMOTION_DELETED")
+                .title("Promotion deleted")
+                .body("Promotion " + existing.getCode() + " has been deleted")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("promotionId", existing.getId(), "code", existing.getCode()))
+                .build());
     }
 
     @Override

@@ -5,6 +5,9 @@ import brama.pressing_api.booking.repo.BookingRepository;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.upload.dto.response.UploadResponse;
 import brama.pressing_api.upload.service.UploadService;
 import brama.pressing_api.vehicle.VehicleMapper;
@@ -36,11 +39,20 @@ public class VehicleServiceImpl implements VehicleService {
     private final VehicleRepository vehicleRepository;
     private final BookingRepository bookingRepository;
     private final UploadService uploadService;
+    private final NotificationService notificationService;
 
     @Override
     public VehicleResponse create(final CreateVehicleRequest request) {
         Vehicle vehicle = VehicleMapper.toEntity(request);
-        return VehicleMapper.toResponse(vehicleRepository.save(vehicle));
+        Vehicle saved = vehicleRepository.save(vehicle);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("VEHICLE_CREATED")
+                .title("Vehicle created")
+                .body("Vehicle " + saved.getMake() + " " + saved.getModel() + " has been added")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("vehicleId", saved.getId()))
+                .build());
+        return VehicleMapper.toResponse(saved);
     }
 
     @Override
@@ -48,7 +60,15 @@ public class VehicleServiceImpl implements VehicleService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new EntityNotFoundException("Vehicle not found"));
         VehicleMapper.applyUpdates(vehicle, request);
-        return VehicleMapper.toResponse(vehicleRepository.save(vehicle));
+        Vehicle saved = vehicleRepository.save(vehicle);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("VEHICLE_UPDATED")
+                .title("Vehicle updated")
+                .body("Vehicle " + saved.getId() + " has been updated")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("vehicleId", saved.getId()))
+                .build());
+        return VehicleMapper.toResponse(saved);
     }
 
     @Override
@@ -64,6 +84,13 @@ public class VehicleServiceImpl implements VehicleService {
             throw new EntityNotFoundException("Vehicle not found");
         }
         vehicleRepository.deleteById(vehicleId);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("VEHICLE_DELETED")
+                .title("Vehicle deleted")
+                .body("Vehicle " + vehicleId + " has been removed")
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("vehicleId", vehicleId))
+                .build());
     }
 
     @Override
@@ -163,7 +190,15 @@ public class VehicleServiceImpl implements VehicleService {
             vehicle.setDocuments(documentUrls);
         }
 
-        return VehicleMapper.toResponse(vehicleRepository.save(vehicle));
+        Vehicle saved = vehicleRepository.save(vehicle);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("VEHICLE_MEDIA_UPDATED")
+                .title("Vehicle media updated")
+                .body("Media was uploaded for vehicle " + saved.getId())
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("vehicleId", saved.getId()))
+                .build());
+        return VehicleMapper.toResponse(saved);
     }
 
     private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {

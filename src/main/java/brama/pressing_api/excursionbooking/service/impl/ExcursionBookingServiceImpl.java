@@ -12,6 +12,9 @@ import brama.pressing_api.excursionbooking.dto.response.ExcursionBookingTicketRe
 import brama.pressing_api.excursionbooking.repo.ExcursionBookingRepository;
 import brama.pressing_api.excursionbooking.service.ExcursionBookingSearchCriteria;
 import brama.pressing_api.excursionbooking.service.ExcursionBookingService;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
@@ -45,6 +48,7 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
     private final ExcursionRepository excursionRepository;
     private final EmailService emailService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     public ExcursionBookingResponse createPublic(final String excursionId,
@@ -87,7 +91,15 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
         excursion.setBookedSeats((excursion.getBookedSeats() != null ? excursion.getBookedSeats() : 0) + seats);
         excursionRepository.save(excursion);
 
-        return ExcursionBookingMapper.toResponse(bookingRepository.save(booking));
+        ExcursionBooking saved = bookingRepository.save(booking);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_BOOKING_CREATED")
+                .title("New excursion booking")
+                .body("A client created excursion booking " + saved.getId())
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("bookingId", saved.getId(), "excursionId", saved.getExcursionId()))
+                .build());
+        return ExcursionBookingMapper.toResponse(saved);
     }
 
     @Override
@@ -132,7 +144,15 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
         }
         releaseSeatsIfNeeded(booking);
         booking.setStatus(ExcursionBookingStatus.CANCELLED);
-        return ExcursionBookingMapper.toResponse(bookingRepository.save(booking));
+        ExcursionBooking saved = bookingRepository.save(booking);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_BOOKING_CANCELLED")
+                .title("Excursion booking cancelled")
+                .body("Client cancelled excursion booking " + saved.getId())
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("bookingId", saved.getId(), "excursionId", saved.getExcursionId()))
+                .build());
+        return ExcursionBookingMapper.toResponse(saved);
     }
 
     @Override
@@ -171,7 +191,17 @@ public class ExcursionBookingServiceImpl implements ExcursionBookingService {
             releaseSeatsIfNeeded(booking);
         }
         booking.setStatus(status);
-        return ExcursionBookingMapper.toResponse(bookingRepository.save(booking));
+        ExcursionBooking saved = bookingRepository.save(booking);
+        if (saved.getUserId() != null) {
+            notificationService.notifyUser(saved.getUserId(), NotificationRequest.builder()
+                    .type("EXCURSION_BOOKING_STATUS_UPDATED")
+                    .title("Excursion booking updated")
+                    .body("Your excursion booking " + saved.getId() + " is now " + saved.getStatus())
+                    .importance(NotificationImportance.HIGH)
+                    .data(java.util.Map.of("bookingId", saved.getId(), "status", String.valueOf(saved.getStatus())))
+                    .build());
+        }
+        return ExcursionBookingMapper.toResponse(saved);
     }
 
     @Override

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/firebase-notifications")
@@ -39,5 +40,24 @@ public class PushNotificationController {
         TopicManagementResponse response = FirebaseMessaging.getInstance()
                 .subscribeToTopic(Collections.singletonList(token), topic);
         return ResponseEntity.ok("Subscribed: " + response.getSuccessCount());
+    }
+
+    @PostMapping("/subscribe-user")
+    public ResponseEntity<String> subscribeUserTopic(@RequestParam String token, @RequestParam String userId)
+            throws FirebaseMessagingException {
+        String topic = "user-" + userId;
+        TopicManagementResponse response = FirebaseMessaging.getInstance()
+                .subscribeToTopic(Collections.singletonList(token), topic);
+        return ResponseEntity.ok("Subscribed to " + topic + ": " + response.getSuccessCount());
+    }
+
+    @PostMapping("/subscribe-user-many")
+    public ResponseEntity<String> subscribeManyTokensToUserTopic(@RequestParam String userId,
+                                                                 @RequestBody List<String> tokens)
+            throws FirebaseMessagingException {
+        String topic = "user-" + userId;
+        TopicManagementResponse response = FirebaseMessaging.getInstance()
+                .subscribeToTopic(tokens, topic);
+        return ResponseEntity.ok("Subscribed to " + topic + ": " + response.getSuccessCount());
     }
 }

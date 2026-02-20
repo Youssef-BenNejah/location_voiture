@@ -11,6 +11,9 @@ import brama.pressing_api.role.RoleRepository;
 import brama.pressing_api.security.JwtService;
 import brama.pressing_api.token.TokenService;
 import brama.pressing_api.token.OtpPurpose;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.user.User;
 import brama.pressing_api.user.UserMapper;
 import brama.pressing_api.user.UserRepository;
@@ -40,6 +43,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final RoleRepository roleRepository;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
 
     @Override
@@ -99,8 +103,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setRoles(roleNames);
 
         log.debug("Saving user {}", user);
-        this.userRepository.save(user);
+        User saved = this.userRepository.save(user);
         this.tokenService.generateOtpToken(user.getId(), OtpPurpose.EMAIL_VERIFICATION);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("USER_REGISTERED")
+                .title("New user registered")
+                .body("A new user registered: " + saved.getEmail())
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("userId", saved.getId()))
+                .build());
 
     }
 
@@ -121,6 +132,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         // Verify OTP code (this already sets emailVerified = true internally)
         this.tokenService.verifyOtpToken(userId, code, OtpPurpose.EMAIL_VERIFICATION);
+        notificationService.notifyUser(userId, NotificationRequest.builder()
+                .type("EMAIL_VERIFIED")
+                .title("Email verified")
+                .body("Your email has been verified successfully")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("userId", userId))
+                .build());
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("USER_EMAIL_VERIFIED")
+                .title("User email verified")
+                .body("User " + userId + " has verified their email")
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("userId", userId))
+                .build());
 
         log.info("✅ Email verified successfully for userId: {}", userId);
     }
@@ -135,6 +160,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final String encoded = this.passwordEncoder.encode(request.getNewPassword());
         user.setPassword(encoded);
         this.userRepository.save(user);
+        notificationService.notifyUser(user.getId(), NotificationRequest.builder()
+                .type("PASSWORD_RESET")
+                .title("Password reset")
+                .body("Your password was reset successfully")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("userId", user.getId()))
+                .build());
     }
 
 

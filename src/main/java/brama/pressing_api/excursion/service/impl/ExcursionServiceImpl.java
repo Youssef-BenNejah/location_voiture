@@ -11,6 +11,9 @@ import brama.pressing_api.excursion.service.ExcursionService;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.EntityNotFoundException;
 import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.upload.dto.response.UploadResponse;
 import brama.pressing_api.upload.service.UploadService;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +32,21 @@ import java.util.stream.Collectors;
 public class ExcursionServiceImpl implements ExcursionService {
     private final ExcursionRepository excursionRepository;
     private final UploadService uploadService;
+    private final NotificationService notificationService;
 
     @Override
     public ExcursionResponse create(final CreateExcursionRequest request) {
         Excursion excursion = ExcursionMapper.toEntity(request);
         ensureCapacityValid(excursion.getTotalCapacity(), excursion.getBookedSeats());
-        return ExcursionMapper.toResponse(excursionRepository.save(excursion));
+        Excursion saved = excursionRepository.save(excursion);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_CREATED")
+                .title("Excursion created")
+                .body("Excursion " + saved.getTitle() + " has been created")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("excursionId", saved.getId()))
+                .build());
+        return ExcursionMapper.toResponse(saved);
     }
 
     @Override
@@ -54,7 +66,15 @@ public class ExcursionServiceImpl implements ExcursionService {
             excursion.setIsEnabled(Boolean.TRUE);
         }
         ensureCapacityValid(excursion.getTotalCapacity(), excursion.getBookedSeats());
-        return ExcursionMapper.toResponse(excursionRepository.save(excursion));
+        Excursion saved = excursionRepository.save(excursion);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_UPDATED")
+                .title("Excursion updated")
+                .body("Excursion " + saved.getTitle() + " has been updated")
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("excursionId", saved.getId()))
+                .build());
+        return ExcursionMapper.toResponse(saved);
     }
 
     @Override
@@ -77,6 +97,13 @@ public class ExcursionServiceImpl implements ExcursionService {
             throw new EntityNotFoundException("Excursion not found");
         }
         excursionRepository.deleteById(excursionId);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_DELETED")
+                .title("Excursion deleted")
+                .body("Excursion " + excursionId + " has been deleted")
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("excursionId", excursionId))
+                .build());
     }
 
     @Override
@@ -99,7 +126,15 @@ public class ExcursionServiceImpl implements ExcursionService {
         Excursion excursion = excursionRepository.findById(excursionId)
                 .orElseThrow(() -> new EntityNotFoundException("Excursion not found"));
         excursion.setIsEnabled(enabled);
-        return ExcursionMapper.toResponse(excursionRepository.save(excursion));
+        Excursion saved = excursionRepository.save(excursion);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_VISIBILITY_UPDATED")
+                .title("Excursion visibility updated")
+                .body("Excursion " + saved.getTitle() + " is now " + (enabled ? "enabled" : "disabled"))
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("excursionId", saved.getId(), "enabled", String.valueOf(enabled)))
+                .build());
+        return ExcursionMapper.toResponse(saved);
     }
 
     private void ensureCapacityValid(final Integer totalCapacity, final Integer bookedSeats) {
@@ -136,7 +171,15 @@ public class ExcursionServiceImpl implements ExcursionService {
 
         excursion.setImages(imageUrls);
 
-        return ExcursionMapper.toResponse(excursionRepository.save(excursion));
+        Excursion saved = excursionRepository.save(excursion);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("EXCURSION_MEDIA_UPDATED")
+                .title("Excursion media updated")
+                .body("Images were uploaded for excursion " + saved.getTitle())
+                .importance(NotificationImportance.LOW)
+                .data(java.util.Map.of("excursionId", saved.getId()))
+                .build());
+        return ExcursionMapper.toResponse(saved);
     }
     private String resolveUrl(UploadResponse upload) {
         if (upload == null) return null;

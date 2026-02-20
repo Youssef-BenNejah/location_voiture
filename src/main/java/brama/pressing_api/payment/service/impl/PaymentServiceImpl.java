@@ -22,6 +22,9 @@ import brama.pressing_api.payment.dto.response.PaymentResponse;
 import brama.pressing_api.payment.repo.PaymentRepository;
 import brama.pressing_api.payment.service.PaymentService;
 import brama.pressing_api.utils.SecurityUtils;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +45,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final ExcursionBookingRepository excursionBookingRepository;
     private final ExcursionRepository excursionRepository;
     private final PricingProperties pricingProperties;
+    private final NotificationService notificationService;
 
     @Override
     public PaymentResponse create(final CreatePaymentRequest request) {
@@ -164,6 +168,22 @@ public class PaymentServiceImpl implements PaymentService {
                 booking.setPaymentStatus(BookingPaymentStatus.REFUNDED);
             }
             bookingRepository.save(booking);
+            if (booking.getUserId() != null) {
+                notificationService.notifyUser(booking.getUserId(), NotificationRequest.builder()
+                        .type("PAYMENT_STATUS_UPDATED")
+                        .title("Payment status updated")
+                        .body("Payment for booking " + booking.getId() + " is now " + status)
+                        .importance(NotificationImportance.HIGH)
+                        .data(java.util.Map.of("paymentId", saved.getId(), "bookingId", booking.getId(), "status", status.name()))
+                        .build());
+            }
+            notificationService.notifyAdmins(NotificationRequest.builder()
+                    .type("PAYMENT_STATUS_UPDATED_ADMIN")
+                    .title("Booking payment updated")
+                    .body("Payment " + saved.getId() + " for booking " + booking.getId() + " is now " + status)
+                    .importance(NotificationImportance.NORMAL)
+                    .data(java.util.Map.of("paymentId", saved.getId(), "bookingId", booking.getId(), "status", status.name()))
+                    .build());
         } else if (saved.getExcursionBookingId() != null && !saved.getExcursionBookingId().isBlank()) {
             ExcursionBooking booking = excursionBookingRepository.findById(saved.getExcursionBookingId())
                     .orElseThrow(() -> new EntityNotFoundException("Excursion booking not found"));
@@ -176,6 +196,22 @@ public class PaymentServiceImpl implements PaymentService {
                 booking.setStatus(ExcursionBookingStatus.CANCELLED);
             }
             excursionBookingRepository.save(booking);
+            if (booking.getUserId() != null) {
+                notificationService.notifyUser(booking.getUserId(), NotificationRequest.builder()
+                        .type("PAYMENT_STATUS_UPDATED")
+                        .title("Payment status updated")
+                        .body("Payment for excursion booking " + booking.getId() + " is now " + status)
+                        .importance(NotificationImportance.HIGH)
+                        .data(java.util.Map.of("paymentId", saved.getId(), "excursionBookingId", booking.getId(), "status", status.name()))
+                        .build());
+            }
+            notificationService.notifyAdmins(NotificationRequest.builder()
+                    .type("PAYMENT_STATUS_UPDATED_ADMIN")
+                    .title("Excursion payment updated")
+                    .body("Payment " + saved.getId() + " for excursion booking " + booking.getId() + " is now " + status)
+                    .importance(NotificationImportance.NORMAL)
+                    .data(java.util.Map.of("paymentId", saved.getId(), "excursionBookingId", booking.getId(), "status", status.name()))
+                    .build());
         }
 
         return PaymentMapper.toResponse(saved);

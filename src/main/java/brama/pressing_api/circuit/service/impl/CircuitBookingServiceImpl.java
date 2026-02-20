@@ -15,6 +15,9 @@ import brama.pressing_api.circuit.service.CircuitBookingSearchCriteria;
 import brama.pressing_api.circuit.service.CircuitBookingService;
 import brama.pressing_api.exception.BusinessException;
 import brama.pressing_api.exception.ErrorCode;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.user.User;
 import brama.pressing_api.user.UserRepository;
 import brama.pressing_api.utils.SecurityUtils;
@@ -39,6 +42,7 @@ public class CircuitBookingServiceImpl implements CircuitBookingService {
     private final CircuitRepository circuitRepository;
     private final CircuitBookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     public CircuitBookingResponse createPublic(final String circuitId,
@@ -92,6 +96,13 @@ public class CircuitBookingServiceImpl implements CircuitBookingService {
         System.out.println("👤 User ID: " + savedBooking.getUserId());
         System.out.println("📧 Email: " + savedBooking.getCustomerEmail());
 
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("CIRCUIT_BOOKING_CREATED")
+                .title("New circuit booking")
+                .body("A client created circuit booking " + savedBooking.getId())
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("bookingId", savedBooking.getId(), "circuitId", savedBooking.getCircuitId()))
+                .build());
         return CircuitMapper.toBookingResponse(savedBooking);
     }
 
@@ -110,7 +121,17 @@ public class CircuitBookingServiceImpl implements CircuitBookingService {
             throw new BusinessException(ErrorCode.CIRCUIT_BOOKING_STATUS_NOT_ALLOWED);
         }
         booking.setStatus(request.getStatus());
-        return CircuitMapper.toBookingResponse(bookingRepository.save(booking));
+        CircuitBooking saved = bookingRepository.save(booking);
+        if (saved.getUserId() != null) {
+            notificationService.notifyUser(saved.getUserId(), NotificationRequest.builder()
+                    .type("CIRCUIT_BOOKING_STATUS_UPDATED")
+                    .title("Circuit booking updated")
+                    .body("Your circuit booking " + saved.getId() + " is now " + saved.getStatus())
+                    .importance(NotificationImportance.HIGH)
+                    .data(java.util.Map.of("bookingId", saved.getId(), "status", String.valueOf(saved.getStatus())))
+                    .build());
+        }
+        return CircuitMapper.toBookingResponse(saved);
     }
 
     @Override
@@ -155,7 +176,15 @@ public class CircuitBookingServiceImpl implements CircuitBookingService {
             throw new BusinessException(ErrorCode.CIRCUIT_BOOKING_STATUS_NOT_ALLOWED);
         }
         booking.setStatus(CircuitBookingStatus.CANCELLED);
-        return CircuitMapper.toBookingResponse(bookingRepository.save(booking));
+        CircuitBooking saved = bookingRepository.save(booking);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("CIRCUIT_BOOKING_CANCELLED")
+                .title("Circuit booking cancelled")
+                .body("Client cancelled circuit booking " + saved.getId())
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("bookingId", saved.getId(), "circuitId", saved.getCircuitId()))
+                .build());
+        return CircuitMapper.toBookingResponse(saved);
     }
 
     @Override

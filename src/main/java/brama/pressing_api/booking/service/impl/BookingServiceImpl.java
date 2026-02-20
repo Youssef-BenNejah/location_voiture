@@ -31,6 +31,9 @@ import brama.pressing_api.payment.domain.model.Payment;
 import brama.pressing_api.payment.domain.model.PaymentProvider;
 import brama.pressing_api.payment.domain.model.PaymentStatus;
 import brama.pressing_api.payment.repo.PaymentRepository;
+import brama.pressing_api.notification.domain.NotificationImportance;
+import brama.pressing_api.notification.dto.NotificationRequest;
+import brama.pressing_api.notification.service.NotificationService;
 import brama.pressing_api.user.User;
 import brama.pressing_api.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +62,7 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final LocationSeedRepository locationRepository;
+    private final NotificationService notificationService;
     @Override
     public BookingResponse create(final CreateBookingRequest request) {
         String userId = SecurityUtils.getCurrentUserId()
@@ -101,7 +105,15 @@ public class BookingServiceImpl implements BookingService {
                 .pricing(pricing)
                 .build();
 
-        return BookingMapper.toResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("BOOKING_CREATED")
+                .title("New booking created")
+                .body("A client created booking " + savedBooking.getId())
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("bookingId", savedBooking.getId()))
+                .build());
+        return BookingMapper.toResponse(savedBooking);
     }
 
     @Override
@@ -199,6 +211,13 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus(BookingStatus.CANCELED);
         Booking saved = bookingRepository.save(booking);
+        notificationService.notifyAdmins(NotificationRequest.builder()
+                .type("BOOKING_CANCELLED")
+                .title("Booking cancelled")
+                .body("Client cancelled booking " + saved.getId())
+                .importance(NotificationImportance.NORMAL)
+                .data(java.util.Map.of("bookingId", saved.getId()))
+                .build());
 
         return enrichClientBooking(saved);
     }
@@ -271,6 +290,13 @@ public class BookingServiceImpl implements BookingService {
                     .orElse(saved));
         }
 
+        notificationService.notifyUser(saved.getUserId(), NotificationRequest.builder()
+                .type("BOOKING_CREATED_BY_ADMIN")
+                .title("Booking created")
+                .body("An admin created booking " + saved.getId() + " for you")
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("bookingId", saved.getId()))
+                .build());
         return BookingMapper.toResponse(saved);
     }
 
@@ -319,6 +345,13 @@ public class BookingServiceImpl implements BookingService {
                 .paidAt(LocalDateTime.now())
                 .build();
         paymentRepository.save(payment);
+        notificationService.notifyUser(booking.getUserId(), NotificationRequest.builder()
+                .type("BOOKING_PAYMENT_RECORDED")
+                .title("Payment recorded")
+                .body("A payment was recorded for booking " + booking.getId())
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("bookingId", booking.getId()))
+                .build());
 
         return BookingMapper.toResponse(booking);
     }
@@ -390,7 +423,15 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
         booking.setStatus(status);
-        return BookingMapper.toResponse(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        notificationService.notifyUser(saved.getUserId(), NotificationRequest.builder()
+                .type("BOOKING_STATUS_UPDATED")
+                .title("Booking status updated")
+                .body("Booking " + saved.getId() + " is now " + saved.getStatus())
+                .importance(NotificationImportance.HIGH)
+                .data(java.util.Map.of("bookingId", saved.getId(), "status", String.valueOf(saved.getStatus())))
+                .build());
+        return BookingMapper.toResponse(saved);
     }
 
     private void validateDateRange(final LocalDate startDate, final LocalDate endDate) {
