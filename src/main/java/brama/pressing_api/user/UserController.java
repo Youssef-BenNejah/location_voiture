@@ -3,6 +3,7 @@ package brama.pressing_api.user;
 import brama.pressing_api.user.dto.request.BanUserRequest;
 import brama.pressing_api.user.dto.response.AdminUserResponse;
 import brama.pressing_api.user.request.ChangePasswordRequest;
+import brama.pressing_api.user.request.FcmTokenRequest;
 import brama.pressing_api.user.request.ProfileUpdateRequest;
 import brama.pressing_api.user.dto.response.UserProfileResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,6 +57,19 @@ public class UserController {
             final ChangePasswordRequest request,
             final Authentication principal) {
         this.service.changePassword(request, getUserId(principal));
+    }
+
+    /**
+     * Registers the current user's FCM token (subscribes to their topic).
+     */
+    @PostMapping("/me/fcm-token")
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
+    public void registerFcmToken(
+            @RequestBody
+            @Valid
+            final FcmTokenRequest request,
+            final Authentication principal) {
+        this.service.registerFcmToken(getUserId(principal), request.getToken());
     }
 
     /**

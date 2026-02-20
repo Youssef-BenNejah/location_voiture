@@ -9,6 +9,7 @@ import brama.pressing_api.user.UserService;
 import brama.pressing_api.notification.domain.NotificationImportance;
 import brama.pressing_api.notification.dto.NotificationRequest;
 import brama.pressing_api.notification.service.NotificationService;
+
 import brama.pressing_api.user.request.ChangePasswordRequest;
 import brama.pressing_api.user.request.ProfileUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import brama.pressing_api.user.dto.response.AdminUserResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static brama.pressing_api.exception.ErrorCode.*;
 
@@ -32,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
+
     @Override
     public UserDetails loadUserByUsername(final String userEmail) throws UsernameNotFoundException {
         return this.userRepository.findByEmailIgnoreCase(userEmail)
@@ -122,6 +125,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteAccount(String userId) {
+
+    }
+
+    @Override
+    public void registerFcmToken(String userId, String token) {
+        final User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+        user.setFcmToken(token);
+        userRepository.save(user);
 
     }
 

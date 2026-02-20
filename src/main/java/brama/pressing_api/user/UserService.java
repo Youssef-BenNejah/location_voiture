@@ -16,6 +16,7 @@ public interface UserService extends UserDetailsService {
     void reactivateAccount(String userId);
 
     void deleteAccount(String userId);
+    void registerFcmToken(String userId, String token);
 
     Page<AdminUserResponse> getAllUsers(Pageable pageable);
     AdminUserResponse getUserById(String id);

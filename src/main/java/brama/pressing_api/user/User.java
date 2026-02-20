@@ -46,6 +46,9 @@ public class User implements UserDetails {
     @NotNull
     private String phoneNumber;
 
+    @Field("fcm_token")
+    private String fcmToken;
+
     @Field("password")
     @NotNull
     private String password;
