@@ -74,13 +74,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void notifyAdmins(final NotificationRequest request) {
-        List<User> admins = userRepository.findByRolesContaining("ADMIN");
-        List<User> prefixedAdmins = userRepository.findByRolesContaining("ROLE_ADMIN");
-        Set<String> adminIds = new LinkedHashSet<>();
-
-        admins.stream().map(User::getId).forEach(adminIds::add);
-        prefixedAdmins.stream().map(User::getId).forEach(adminIds::add);
-
+        Set<String> adminIds = resolveAdminIds();
         notifyUsers(adminIds, request);
     }
 
@@ -142,9 +136,20 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendPushNotifications(final Set<String> recipients, final NotificationRequest request) {
+        Set<String> adminIds = resolveAdminIds();
+        if (adminIds.isEmpty()) {
+            return;
+        }
+        Set<String> pushRecipients = recipients.stream()
+                .filter(adminIds::contains)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (pushRecipients.isEmpty()) {
+            return;
+        }
         Map<String, String> data = request.getData() != null ? request.getData() : Map.of();
-        for (String userId : recipients) {
+        for (String userId : pushRecipients) {
             try {
+                log.info("Sending push notification to user {} (topic {}) type={}", userId, userTopic(userId), request.getType());
                 pushNotificationService.sendToTopic(PushNotificationRequest.builder()
                         .title(request.getTitle())
                         .body(request.getBody())
@@ -208,5 +213,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String userTopic(final String userId) {
         return USER_TOPIC_PREFIX + userId;
+    }
+
+    private Set<String> resolveAdminIds() {
+        List<User> admins = userRepository.findByRolesContaining("ADMIN");
+        List<User> prefixedAdmins = userRepository.findByRolesContaining("ROLE_ADMIN");
+        Set<String> adminIds = new LinkedHashSet<>();
+        admins.stream().map(User::getId).forEach(adminIds::add);
+        prefixedAdmins.stream().map(User::getId).forEach(adminIds::add);
+        return adminIds;
     }
 }
